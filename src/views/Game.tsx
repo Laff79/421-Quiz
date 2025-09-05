@@ -140,7 +140,7 @@ export default function Game() {
     }, AUTO_SKIP_SECONDS * 1000)
   }
 
-  async function revealFasit(skipped = false) {
+  async function revealFasit(_skipped = false) {
     if (!round) return
     await SpotifyAPI.pause().catch(() => {})
     const until = nowMs() + 3000
@@ -167,20 +167,17 @@ export default function Game() {
   // Når det kommer et buzz, pause og sett fase=buzzed + svarfrist
   React.useEffect(() => {
     if (!buzz || roomState.phase !== 'playing') return
-    // Første buzz vinner; andre vil bli ignorert (DB transaksjon ligger i Player)
     ;(async () => {
-      try {
-        await SpotifyAPI.pause()
-      } catch {}
+      try { await SpotifyAPI.pause() } catch {}
       await update(ref(db, `rooms/${room}/state`), { phase: 'buzzed' })
       // Autotime ut etter 15s hvis ingen svar
       setTimeout(async () => {
-        const sSnap = await (await import('firebase/database')).get(ref(db, `rooms/${room}/state`))
+        const { get } = await import('firebase/database')
+        const sSnap = await get(ref(db, `rooms/${room}/state`))
         const s = (sSnap.val() || {}) as RoomState
-        const aSnap = await (await import('firebase/database')).get(ref(db, `rooms/${room}/answer`))
+        const aSnap = await get(ref(db, `rooms/${room}/answer`))
         const a = aSnap.val() as Answer
-        if (s.phase === 'buzzed' && !a) {
-          // Ingen svar – feil svar (0 tekst). Poeng: minus nåværende vindu.
+        if (s.phase === 'buzzed' && !a && buzz) {
           await applyAnswerResult(false, '', buzz.playerId)
         }
       }, ANSWER_SECONDS * 1000)
@@ -192,7 +189,11 @@ export default function Game() {
   React.useEffect(() => {
     if (!answer || !round) return
     ;(async () => {
-      const ok = isArtistMatch(answer.text || '', (round.questions[roomState.idx]?.artistNames) || [], 0.85)
+      const ok = isArtistMatch(
+        answer.text || '',
+        (round.questions[roomState.idx]?.artistNames) || [],
+        0.85
+      )
       await applyAnswerResult(ok, answer.text, answer.playerId)
     })()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -200,13 +201,13 @@ export default function Game() {
 
   async function applyAnswerResult(correct: boolean, text: string, playerId: string) {
     if (!round) return
-    const sSnap = await (await import('firebase/database')).get(ref(db, `rooms/${room}/state`))
+    const { get } = await import('firebase/database')
+    const sSnap = await get(ref(db, `rooms/${room}/state`))
     const s = (sSnap.val() || {}) as RoomState
     const tSec = secsSinceStart(s)
     let dropWrong = false
     let scoreWindow = currentScoreAt(tSec, s.wrongAtAny)
     if (!correct) {
-      // Hvis vi er i 4p-vindu og dette er første feil, dropp til 2p for resten
       if (tSec < 20 && !s.wrongAtAny) {
         dropWrong = true
         scoreWindow = 4
@@ -222,6 +223,21 @@ export default function Game() {
     if (dropWrong) {
       await update(ref(db, `rooms/${room}/state`), { wrongAtAny: true })
     }
+
+    // Skriv siste resultat (for spiller-feedback)
+    const idx = typeof s.idx === 'number' ? s.idx : roomState.idx
+    const accepted = round.questions[idx]?.artistNames || []
+    const pname = players[playerId]?.name || 'Spiller'
+    await set(ref(db, `rooms/${room}/lastResult`), {
+      playerId,
+      name: pname,
+      correct,
+      points: delta,
+      window: Math.abs(scoreWindow),
+      text,
+      accepted,
+      at: Date.now(),
+    })
 
     // Vis fasit 3s og gå videre
     await revealFasit(false)
@@ -286,7 +302,7 @@ export default function Game() {
             </div>
           </div>
 
-          {/* Nåværende spørsmål (kun teknisk info – vert er “blind” ellers) */}
+          {/* Tekniske detaljer (kan skjules ved behov) */}
           <div className="vstack" style={{ marginTop: 12 }}>
             <small className="muted">Spiller: {q ? `${q.name} — ${q.artistNames.join(', ')}` : '—'}</small>
           </div>
