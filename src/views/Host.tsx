@@ -1,11 +1,12 @@
 import React from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { createWebPlayer } from '../spotify/player'
 import { SpotifyAPI } from '../spotify/api'
 import { getAccessToken } from '../auth/spotifyAuth'
 
 const TEST_TRACK = '11dFghVXANMlKmJXsNCbNl' // Spotify demo-låt
-const PAGE_SIZE = 50 // Spotify tillater maks 50 på /me/playlists
+const PAGE_SIZE = 50                           // Spotify maks 50 på /me/playlists
+const QUESTIONS = 15                           // Standard antall spørsmål
 
 type SimplePlaylist = {
   id: string
@@ -14,8 +15,39 @@ type SimplePlaylist = {
   owner?: string
 }
 
+type RoundQ = {
+  id: string
+  uri: string
+  name: string
+  artistNames: string[]
+  duration_ms: number
+}
+
+function normalizeArtist(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}+/gu, '')
+    .replace(/^(the\s+)/, '')
+    .replace(/\s*&\s*|\s*and\s*/g, ' ')
+    .replace(/feat\.|featuring|ft\./g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+// Durstenfeld shuffle
+function shuffle<T>(arr: T[]): T[] {
+  const a = arr.slice()
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
 export default function Host() {
   const [search] = useSearchParams()
+  const nav = useNavigate()
   const room = search.get('room') || 'EDPN-quiz'
 
   // --- Lydtest ---
@@ -81,7 +113,6 @@ export default function Host() {
     const res = await fetch(url, {
       headers: { Authorization: `Bearer ${token}` },
     })
-    // Håndter rate limit (429)
     if (res.status === 429) {
       const wait = parseInt(res.headers.get('Retry-After') || '2', 10) * 1000
       await new Promise((r) => setTimeout(r, wait))
@@ -101,7 +132,7 @@ export default function Host() {
       setPlaylists([])
       setSelected(new Set())
       const url = new URL('https://api.spotify.com/v1/me/playlists')
-      url.searchParams.set('limit', String(PAGE_SIZE)) // ikke bruk fields her – kan gi 400 på noen kontoer
+      url.searchParams.set('limit', String(PAGE_SIZE))
       const page = await fetchPage(url.toString())
       setPlaylists(toSimple(page.items))
       setNextUrl(page.next || null)
@@ -144,6 +175,114 @@ export default function Host() {
         (p.owner || '').toLowerCase().includes(qq)
     )
   }, [playlists, q])
+
+  // --- BYGG RUNDE ---
+  const [building, setBuilding] = React.useState(false)
+  const [built, setBuilt] = React.useState<RoundQ[] | null>(null)
+  const [buildMsg, setBuildMsg] = React.useState<string>('')
+
+  async function fetchPlaylistTracksAll(playlistId: string): Promise<RoundQ[]> {
+    const out: RoundQ[] = []
+    let offset = 0
+    const limit = 100
+    while (true) {
+      const page = await SpotifyAPI.getPlaylistTracks(playlistId, limit, offset)
+      const items = (page.items || []) as any[]
+      for (const it of items) {
+        const t = it.track
+        if (!t || t.type !== 'track') continue
+        if (!t.id || !t.uri) continue
+        const artistNames = (t.artists || []).map((a: any) => a.name).filter(Boolean)
+        out.push({
+          id: t.id,
+          uri: t.uri,
+          name: t.name,
+          artistNames,
+          duration_ms: t.duration_ms || 0,
+        })
+      }
+      if (!page.next) break
+      offset += limit
+    }
+    return out
+  }
+
+  async function buildRound() {
+    if (selected.size === 0) {
+      setBuildMsg('Velg minst én spilleliste først')
+      return
+    }
+    try {
+      setBuilding(true)
+      setBuildMsg('Henter spor fra valgte spillelister…')
+      const all: RoundQ[] = []
+      const seenTrack = new Set<string>()
+      const ids = Array.from(selected)
+
+      for (let i = 0; i < ids.length; i++) {
+        const pid = ids[i]
+        setBuildMsg(`Henter fra liste ${i + 1}/${ids.length}…`)
+        const tracks = await fetchPlaylistTracksAll(pid)
+        for (const t of tracks) {
+          if (seenTrack.has(t.id)) continue // dedup mellom lister
+          seenTrack.add(t.id)
+          all.push(t)
+        }
+      }
+
+      if (all.length === 0) {
+        setBuildMsg('Fant ingen spor i de valgte listene')
+        setBuilt(null)
+        return
+      }
+
+      // Randomiser og plukk maks én pr artist (alle artister på sporet teller)
+      const shuffled = shuffle(all)
+      const usedArtists = new Set<string>()
+      const picked: RoundQ[] = []
+
+      for (const t of shuffled) {
+        const normalizedSet = new Set(t.artistNames.map(normalizeArtist))
+        let clash = false
+        for (const a of normalizedSet) {
+          if (usedArtists.has(a)) {
+            clash = true
+            break
+          }
+        }
+        if (!clash) {
+          // merk alle artister som brukt
+          for (const a of normalizedSet) usedArtists.add(a)
+          picked.push(t)
+          if (picked.length >= QUESTIONS) break
+        }
+      }
+
+      setBuilt(picked)
+      setBuildMsg(
+        `Klar: ${picked.length} valgt av ${all.length} kandidater (unik artist-regel).`
+      )
+
+      // Lagre runden i sessionStorage for /game
+      const roundPayload = {
+        createdAt: Date.now(),
+        room,
+        selectedPlaylists: ids,
+        totalCandidates: all.length,
+        questions: picked,
+      }
+      sessionStorage.setItem('edpn_round', JSON.stringify(roundPayload))
+    } catch (e: any) {
+      setBuilt(null)
+      setBuildMsg('Feil ved bygging: ' + (e?.message || 'ukjent feil'))
+    } finally {
+      setBuilding(false)
+    }
+  }
+
+  function goToGame() {
+    nav('/game')
+  }
 
   return (
     <div className="card vstack">
@@ -235,10 +374,47 @@ export default function Host() {
                 {nextUrl ? 'Vis flere' : 'Ingen flere'}
               </button>
 
-              <button className="ghost" disabled={selected.size === 0}>
-                Bygg runde (kommer i neste trinn)
+              <button
+                className="primary"
+                onClick={buildRound}
+                disabled={building || selected.size === 0}
+                title={selected.size === 0 ? 'Velg minst én liste' : ''}
+              >
+                {building ? 'Bygger runde…' : `Bygg runde (${QUESTIONS})`}
               </button>
             </div>
+
+            {buildMsg && <small className="badge">{buildMsg}</small>}
+
+            {built && built.length > 0 && (
+              <div className="vstack" style={{ marginTop: 8 }}>
+                <strong>Runde klar – {built.length} spørsmål</strong>
+                <div
+                  className="vstack"
+                  style={{
+                    maxHeight: 260,
+                    overflow: 'auto',
+                    border: '1px dashed #ddd',
+                    borderRadius: 12,
+                    padding: 8,
+                  }}
+                >
+                  {built.map((t, i) => (
+                    <div key={t.id} className="hstack" style={{ justifyContent: 'space-between' }}>
+                      <div>
+                        <span className="badge" style={{ marginRight: 8 }}>{i + 1}</span>
+                        <strong>{t.name}</strong>
+                        <small style={{ marginLeft: 6, color: '#666' }}>— {t.artistNames.join(', ')}</small>
+                      </div>
+                      <small className="muted">{Math.round((t.duration_ms || 0) / 1000)} s</small>
+                    </div>
+                  ))}
+                </div>
+                <div className="hstack" style={{ gap: 8 }}>
+                  <button className="primary" onClick={goToGame}>Send til spill</button>
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>
@@ -247,7 +423,7 @@ export default function Host() {
 
       <ul>
         <li>Filtrer explicit (toggle) – kommer</li>
-        <li>Start runde (15 spm, tilfeldig trekk, maks 1 pr artist) – kommer</li>
+        <li>Start runde (poenglogikk/buzzer) – kommer</li>
       </ul>
     </div>
   )
