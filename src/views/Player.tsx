@@ -5,6 +5,17 @@ import {
   ref, set, update, onValue, runTransaction, off, get,
 } from 'firebase/database'
 
+type LastResult = {
+  playerId: string
+  name: string
+  correct: boolean
+  points: number   // +/−
+  window: number   // 4/2/1
+  text: string
+  accepted: string[]
+  at: number
+}
+
 export default function Player() {
   const [search] = useSearchParams()
   const room = search.get('room') || 'EDPN-quiz'
@@ -17,6 +28,8 @@ export default function Player() {
   const [buzzOwner, setBuzzOwner] = React.useState<{playerId:string; name:string}|null>(null)
   const [answerText, setAnswerText] = React.useState('')
 
+  const [result, setResult] = React.useState<LastResult | null>(null)
+
   React.useEffect(() => {
     ensureAnonAuth().then(setUid).catch(console.error)
   }, [])
@@ -25,6 +38,8 @@ export default function Player() {
   React.useEffect(() => {
     const sRef = ref(db, `rooms/${room}/state`)
     const bRef = ref(db, `rooms/${room}/buzz`)
+    const rRef = ref(db, `rooms/${room}/lastResult`)
+
     const unsub1 = onValue(sRef, (snap) => {
       const v = snap.val()
       if (v?.phase) setPhase(v.phase)
@@ -34,8 +49,17 @@ export default function Player() {
       const v = snap.val()
       setBuzzOwner(v ? { playerId: v.playerId, name: v.name } : null)
     })
-    return () => { off(sRef); off(bRef); unsub1(); unsub2() }
-  }, [room])
+    const unsub3 = onValue(rRef, (snap) => {
+      const v = snap.val() as LastResult | null
+      if (v && uid && v.playerId === uid) {
+        setResult(v)
+        // Skjul etter ca. 3 sek
+        setTimeout(() => setResult(null), 3000)
+      }
+    })
+
+    return () => { off(sRef); off(bRef); off(rRef); unsub1(); unsub2(); unsub3() }
+  }, [room, uid])
 
   async function join() {
     if (!uid) return
@@ -56,14 +80,12 @@ export default function Player() {
   async function buzz() {
     if (!uid) return
     try {
-      // Må være i playing
       const sSnap = await get(ref(db, `rooms/${room}/state`))
       const s = sSnap.val() || {}
       if (s.phase !== 'playing') {
         alert('Venter på at nytt spørsmål spiller (fase er ikke "playing").')
         return
       }
-      // Forsøk å skrive buzz atomisk – hvis noen allerede buzzet, blir ikke commit
       const bRef = ref(db, `rooms/${room}/buzz`)
       const res = await runTransaction(bRef, (curr) => {
         if (curr) return curr
@@ -93,11 +115,32 @@ export default function Player() {
       <h2>Spiller</h2>
       <div>Rom: <span className="badge">{room}</span></div>
 
-      {/* Statusrad for feilsøking */}
+      {/* Statusrad */}
       <div className="hstack" style={{ gap: 8, flexWrap: 'wrap', marginTop: 6 }}>
         <span className="badge">Fase: {phase}</span>
         <span className="badge">Buzz: {buzzOwner ? buzzOwner.name : '—'}</span>
       </div>
+
+      {/* Resultat-banner for denne spilleren */}
+      {result && (
+        <div
+          className="vstack"
+          style={{
+            marginTop: 8,
+            borderRadius: 12,
+            padding: 10,
+            border: `1px solid ${result.correct ? '#2e7d32' : '#c62828'}`,
+            background: result.correct ? '#e8f5e9' : '#ffebee',
+          }}
+        >
+          <strong>{result.correct ? 'Riktig!' : 'Feil'}</strong>
+          <small>
+            {result.correct ? 'Du fikk' : 'Du mistet'} {Math.abs(result.points)} poeng
+            {result.window ? ` (vindu: ${result.window})` : ''}.
+            {result.accepted?.length ? ` Akseptert(e): ${result.accepted.join(', ')}.` : ''}
+          </small>
+        </div>
+      )}
 
       {!joined ? (
         <>
