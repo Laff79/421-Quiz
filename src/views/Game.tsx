@@ -107,13 +107,7 @@ export default function Game() {
       setDeviceId(id)
       await SpotifyAPI.transferPlayback(id)
       setPlayerStatus(`Klar (device: ${id})`)
-
-      // Auto-start første spørsmål hvis runde finnes og state er idle
-      if (round) {
-        const sSnap = await get(ref(db, `rooms/${room}/state`))
-        const s = (sSnap.val() || {}) as RoomState
-        if (s.phase === 'idle') await startQuestion(0)
-      }
+      // Viktig: ikke auto-start første spørsmål her (brukeren skal trykke "Start runde")
     } catch (e: any) {
       setPlayerStatus('Feil: ' + (e?.message || 'ukjent'))
     }
@@ -175,6 +169,19 @@ export default function Game() {
       return
     }
     await startQuestion(next)
+  }
+
+  async function resetToFirst() {
+    await SpotifyAPI.pause().catch(() => {})
+    await set(ref(db, `rooms/${room}/buzz`), null)
+    await set(ref(db, `rooms/${room}/answer`), null)
+    await update(ref(db, `rooms/${room}/state`), {
+      idx: 0,
+      phase: 'idle',
+      startedAt: null,
+      wrongAtAny: false,
+      revealUntil: null,
+    } as any)
   }
 
   // Pause ved buzz + 15 s svarfrist
@@ -282,21 +289,30 @@ export default function Game() {
               <div>Rom: <span className="badge">{room}</span></div>
               <div>Spørsmål: <span className="badge">{roomState.idx + 1}/{round.questions.length}</span></div>
             </div>
-            <div className="hstack" style={{ gap: 8 }}>
-              <button
-                className="primary"
-                onClick={() => (roomState.phase === 'idle' ? startQuestion(0) : nextQuestion())}
-                title={!deviceId ? 'Aktiver først' : ''}
-              >
-                {roomState.phase === 'idle' ? 'Start runde' : 'Neste spørsmål'}
-              </button>
-              <button
-                className="ghost"
-                onClick={() => revealFasit(true)}
-                disabled={roomState.phase === 'idle' || roomState.phase === 'ended'}
-              >
-                Fasit (3 s)
-              </button>
+
+            {/* Kontrollknapper */}
+            <div className="hstack" style={{ gap: 8, flexWrap: 'wrap' }}>
+              {roomState.phase === 'idle' ? (
+                <button
+                  className="primary"
+                  onClick={() => startQuestion(0)}
+                  title={!deviceId ? 'Aktiver først' : ''}
+                >
+                  Start runde (spm #1)
+                </button>
+              ) : (
+                <>
+                  <button className="primary" onClick={nextQuestion}>
+                    Neste spørsmål
+                  </button>
+                  <button className="ghost" onClick={() => revealFasit(true)}>
+                    Fasit (3 s)
+                  </button>
+                  <button className="ghost" onClick={resetToFirst} title="Tilbake til første spørsmål">
+                    Start på nytt (til #1)
+                  </button>
+                </>
+              )}
             </div>
           </div>
 
@@ -344,7 +360,10 @@ export default function Game() {
           {roomState.phase === 'ended' && (
             <div className="vstack" style={{ marginTop: 16 }}>
               <strong>Ferdig 🎉</strong>
-              <button className="primary" onClick={() => nav('/host')}>Tilbake til Vert</button>
+              <div className="hstack" style={{ gap: 8 }}>
+                <button className="primary" onClick={resetToFirst}>Start på nytt (til #1)</button>
+                <button className="ghost" onClick={() => nav('/host')}>Tilbake til Vert</button>
+              </div>
             </div>
           )}
         </>
