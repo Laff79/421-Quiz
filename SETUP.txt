@@ -1,0 +1,5 @@
+1) Netlify → Add new site → Deploy manually → last opp ZIP.
+2) Spotify → Redirect URI: https://<navn>.netlify.app/callback (+ http://localhost:5173/callback).
+3) Firebase → Web-app → Realtime DB → Anonymous Auth = ON → kopier nøkler.
+4) Netlify → Env vars (se .env.template) → redeploy.
+5) Åpne siden → Logg inn → Lobby → Start som vert.
