@@ -42,14 +42,29 @@ const AUTO_SKIP_SECONDS = 90
 export default function Game() {
   const nav = useNavigate()
   const [round, setRound] = React.useState<RoundPayload | null>(null)
-  const [deviceId, setDeviceId] = React.useState<string | null>(null)
 
-  const [roomState, setRoomState] = React.useState<RoomState>({
-    idx: 0, phase: 'idle',
-  })
+  const [roomState, setRoomState] = React.useState<RoomState>({ idx: 0, phase: 'idle' })
   const [buzz, setBuzz] = React.useState<Buzz>(null)
   const [answer, setAnswer] = React.useState<Answer>(null)
   const [players, setPlayers] = React.useState<Record<string, { name: string; score: number }>>({})
+
+  // Nettleser-spiller
+  const [deviceId, setDeviceId] = React.useState<string | null>(null)
+  const [playerStatus, setPlayerStatus] = React.useState('Ikke aktiv')
+
+  async function initWebPlayer() {
+    try {
+      setPlayerStatus('Aktiverer…')
+      const { deviceId: id, player } = await createWebPlayer('EDPN Quiz Player')
+      // Viktig for Chrome/Safari: må kalles pga. autoplay-regler
+      await (player as any)?.activateElement?.()
+      setDeviceId(id)
+      await SpotifyAPI.transferPlayback(id)
+      setPlayerStatus(`Klar (device: ${id})`)
+    } catch (e: any) {
+      setPlayerStatus('Feil: ' + (e?.message || 'ukjent'))
+    }
+  }
 
   // --- Load round from sessionStorage ---
   React.useEffect(() => {
@@ -62,23 +77,6 @@ export default function Game() {
   const room = round?.room || 'EDPN-quiz'
   const q = round?.questions?.[roomState.idx]
 
-  // --- Ensure web player on this page too ---
-  React.useEffect(() => {
-    let alive = true
-    async function boot() {
-      try {
-        const { deviceId } = await createWebPlayer('EDPN Quiz Player')
-        if (!alive) return
-        setDeviceId(deviceId)
-        await SpotifyAPI.transferPlayback(deviceId)
-      } catch (e) {
-        console.error(e)
-      }
-    }
-    boot()
-    return () => { alive = false }
-  }, [])
-
   // --- Firebase bindings ---
   React.useEffect(() => {
     if (!room) return
@@ -87,159 +85,101 @@ export default function Game() {
     const aRef = ref(db, `rooms/${room}/answer`)
     const pRef = ref(db, `rooms/${room}/players`)
 
-    const unsub1 = onValue(sRef, (snap) => {
-      const val = snap.val() as RoomState | null
-      if (val) setRoomState(val)
-    })
+    const unsub1 = onValue(sRef, (snap) => { const v = snap.val() as RoomState | null; if (v) setRoomState(v) })
     const unsub2 = onValue(bRef, (snap) => setBuzz(snap.val()))
     const unsub3 = onValue(aRef, (snap) => setAnswer(snap.val()))
     const unsub4 = onValue(pRef, (snap) => setPlayers(snap.val() || {}))
 
-    return () => {
-      off(sRef); off(bRef); off(aRef); off(pRef)
-      unsub1(); unsub2(); unsub3(); unsub4()
-    }
+    return () => { off(sRef); off(bRef); off(aRef); off(pRef); unsub1(); unsub2(); unsub3(); unsub4() }
   }, [room])
 
   // --- Helpers ---
   function nowMs() { return Date.now() }
-  function secsSinceStart(s: RoomState) {
-    if (!s.startedAt) return 0
-    return Math.max(0, (nowMs() - s.startedAt) / 1000)
-  }
-  function windowScore(s: RoomState) {
-    return currentScoreAt(secsSinceStart(s), s.wrongAtAny)
-  }
+  function secsSinceStart(s: RoomState) { return !s.startedAt ? 0 : Math.max(0, (nowMs() - s.startedAt) / 1000) }
+  function windowScore(s: RoomState) { return currentScoreAt(secsSinceStart(s), s.wrongAtAny) }
 
   async function startQuestion(nextIdx?: number) {
-    if (!round || deviceId == null) return
+    if (!round) return
+    if (!deviceId) { setPlayerStatus('Mangler nettleser-spiller – klikk “Aktiver nettleser-spiller”.'); return }
     const idx = typeof nextIdx === 'number' ? nextIdx : roomState.idx
-    const qq = round.questions[idx]
-    if (!qq) return
+    const qq = round.questions[idx]; if (!qq) return
 
-    // Reset DB state for this question
     await set(ref(db, `rooms/${room}/buzz`), null)
     await set(ref(db, `rooms/${room}/answer`), null)
     await update(ref(db, `rooms/${room}/state`), {
-      idx,
-      phase: 'playing',
-      startedAt: nowMs(),
-      wrongAtAny: false,
-      revealUntil: null,
+      idx, phase: 'playing', startedAt: nowMs(), wrongAtAny: false, revealUntil: null,
     })
 
-    // Start playback at 0:00
     await SpotifyAPI.play({ uris: [qq.uri], position_ms: 0 })
 
-    // Auto-skip etter 90s hvis ingen har svart
     setTimeout(() => {
       const s = roomState
-      if (s.phase === 'playing' && s.idx === idx) {
-        revealFasit(true)
-      }
+      if (s.phase === 'playing' && s.idx === idx) revealFasit(true)
     }, AUTO_SKIP_SECONDS * 1000)
   }
 
   async function revealFasit(_skipped = false) {
-    if (!round) return
     await SpotifyAPI.pause().catch(() => {})
     const until = nowMs() + 3000
-    await update(ref(db, `rooms/${room}/state`), {
-      phase: 'reveal',
-      revealUntil: until,
-    })
-    // Etter 3 sek, neste spørsmål
-    setTimeout(() => {
-      nextQuestion()
-    }, 3000)
+    await update(ref(db, `rooms/${room}/state`), { phase: 'reveal', revealUntil: until })
+    setTimeout(() => { nextQuestion() }, 3000)
   }
 
   async function nextQuestion() {
     if (!round) return
     const next = roomState.idx + 1
-    if (next >= round.questions.length) {
-      await update(ref(db, `rooms/${room}/state`), { phase: 'ended' })
-      return
-    }
+    if (next >= round.questions.length) { await update(ref(db, `rooms/${room}/state`), { phase: 'ended' }); return }
     await startQuestion(next)
   }
 
-  // Når det kommer et buzz, pause og sett fase=buzzed + svarfrist
+  // Pause ved buzz + 15 s svarfrist
   React.useEffect(() => {
     if (!buzz || roomState.phase !== 'playing') return
     ;(async () => {
       try { await SpotifyAPI.pause() } catch {}
       await update(ref(db, `rooms/${room}/state`), { phase: 'buzzed' })
-      // Autotime ut etter 15s hvis ingen svar
       setTimeout(async () => {
         const { get } = await import('firebase/database')
         const sSnap = await get(ref(db, `rooms/${room}/state`))
         const s = (sSnap.val() || {}) as RoomState
         const aSnap = await get(ref(db, `rooms/${room}/answer`))
         const a = aSnap.val() as Answer
-        if (s.phase === 'buzzed' && !a && buzz) {
-          await applyAnswerResult(false, '', buzz.playerId)
-        }
+        if (s.phase === 'buzzed' && !a && buzz) await applyAnswerResult(false, '', buzz.playerId)
       }, ANSWER_SECONDS * 1000)
     })()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [buzz?.playerId])
 
-  // Når det kommer et answer, vurder og tildel poeng
+  // Vurder svar → poeng + lastResult
   React.useEffect(() => {
     if (!answer || !round) return
     ;(async () => {
-      const ok = isArtistMatch(
-        answer.text || '',
-        (round.questions[roomState.idx]?.artistNames) || [],
-        0.85
-      )
+      const ok = isArtistMatch(answer.text || '', (round.questions[roomState.idx]?.artistNames) || [], 0.85)
       await applyAnswerResult(ok, answer.text, answer.playerId)
     })()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [answer?.playerId, answer?.text])
 
   async function applyAnswerResult(correct: boolean, text: string, playerId: string) {
-    if (!round) return
     const { get } = await import('firebase/database')
     const sSnap = await get(ref(db, `rooms/${room}/state`))
     const s = (sSnap.val() || {}) as RoomState
     const tSec = secsSinceStart(s)
     let dropWrong = false
     let scoreWindow = currentScoreAt(tSec, s.wrongAtAny)
-    if (!correct) {
-      if (tSec < 20 && !s.wrongAtAny) {
-        dropWrong = true
-        scoreWindow = 4
-      }
-    }
+    if (!correct && tSec < 20 && !s.wrongAtAny) { dropWrong = true; scoreWindow = 4 }
     const delta = correct ? scoreWindow : -scoreWindow
 
-    // Oppdater spiller-score atomisk
-    await runTransaction(ref(db, `rooms/${room}/players/${playerId}/score`), (curr) => {
-      return (typeof curr === 'number' ? curr : 0) + delta
-    })
+    await runTransaction(ref(db, `rooms/${room}/players/${playerId}/score`), (curr) => (typeof curr === 'number' ? curr : 0) + delta)
+    if (dropWrong) await update(ref(db, `rooms/${room}/state`), { wrongAtAny: true })
 
-    if (dropWrong) {
-      await update(ref(db, `rooms/${room}/state`), { wrongAtAny: true })
-    }
-
-    // Skriv siste resultat (for spiller-feedback)
     const idx = typeof s.idx === 'number' ? s.idx : roomState.idx
-    const accepted = round.questions[idx]?.artistNames || []
+    const accepted = round!.questions[idx]?.artistNames || []
     const pname = players[playerId]?.name || 'Spiller'
     await set(ref(db, `rooms/${room}/lastResult`), {
-      playerId,
-      name: pname,
-      correct,
-      points: delta,
-      window: Math.abs(scoreWindow),
-      text,
-      accepted,
-      at: Date.now(),
+      playerId, name: pname, correct, points: delta, window: Math.abs(scoreWindow), text, accepted, at: Date.now(),
     })
 
-    // Vis fasit 3s og gå videre
     await revealFasit(false)
   }
 
@@ -250,6 +190,15 @@ export default function Game() {
   return (
     <div className="card vstack">
       <h2>Spillvisning</h2>
+
+      {/* Nettleser-spiller aktivering */}
+      <div className="vstack" style={{ marginBottom: 8 }}>
+        <div className="hstack" style={{ gap: 8, flexWrap: 'wrap' }}>
+          <button className="primary" onClick={initWebPlayer}>Aktiver nettleser-spiller</button>
+          <span className="badge">{playerStatus}</span>
+        </div>
+        <small className="muted">Må trykkes én gang per økt pga. nettleserens autoplay-regler.</small>
+      </div>
 
       {!round && <p>Ingen runde funnet. Gå til <a href="/" onClick={(e)=>{e.preventDefault(); nav('/host')}}>Vert</a> og bygg en runde.</p>}
 
@@ -288,7 +237,7 @@ export default function Game() {
             {buzz && <span className="badge">Buzz: {buzz.name}</span>}
           </div>
 
-          {/* Enkel scoreboard */}
+          {/* Scoreboard */}
           <div className="vstack" style={{ marginTop: 8 }}>
             <strong>Score</strong>
             <div className="vstack" style={{ border: '1px solid #eee', borderRadius: 12, padding: 8, maxHeight: 220, overflow: 'auto' }}>
@@ -302,9 +251,9 @@ export default function Game() {
             </div>
           </div>
 
-          {/* Tekniske detaljer (kan skjules ved behov) */}
+          {/* (Tekniske detaljer – kan skjules) */}
           <div className="vstack" style={{ marginTop: 12 }}>
-            <small className="muted">Spiller: {q ? `${q.name} — ${q.artistNames.join(', ')}` : '—'}</small>
+            <small className="muted">Spiller nå: {q ? `${q.name} — ${q.artistNames.join(', ')}` : '—'}</small>
           </div>
 
           {roomState.phase === 'ended' && (
