@@ -176,10 +176,11 @@ export default function Host() {
     )
   }, [playlists, q])
 
-  // --- BYGG RUNDE ---
+  // --- BYGG RUNDE (blind host) ---
   const [building, setBuilding] = React.useState(false)
   const [built, setBuilt] = React.useState<RoundQ[] | null>(null)
   const [buildMsg, setBuildMsg] = React.useState<string>('')
+  const [showFasit, setShowFasit] = React.useState(false) // blind som standard
 
   async function fetchPlaylistTracksAll(playlistId: string): Promise<RoundQ[]> {
     const out: RoundQ[] = []
@@ -214,6 +215,7 @@ export default function Host() {
     }
     try {
       setBuilding(true)
+      setShowFasit(false)
       setBuildMsg('Henter spor fra valgte spillelister…')
       const all: RoundQ[] = []
       const seenTrack = new Set<string>()
@@ -245,13 +247,9 @@ export default function Host() {
         const normalizedSet = new Set(t.artistNames.map(normalizeArtist))
         let clash = false
         for (const a of normalizedSet) {
-          if (usedArtists.has(a)) {
-            clash = true
-            break
-          }
+          if (usedArtists.has(a)) { clash = true; break }
         }
         if (!clash) {
-          // merk alle artister som brukt
           for (const a of normalizedSet) usedArtists.add(a)
           picked.push(t)
           if (picked.length >= QUESTIONS) break
@@ -259,11 +257,10 @@ export default function Host() {
       }
 
       setBuilt(picked)
-      setBuildMsg(
-        `Klar: ${picked.length} valgt av ${all.length} kandidater (unik artist-regel).`
-      )
+      setBuildMsg(`Runde klar: ${picked.length} spørsmål (unik artist-regel).`)
 
-      // Lagre runden i sessionStorage for /game
+      // Lagre runden i sessionStorage for /game (full info),
+      // men ikke vis detaljene i Host-UI (blind som standard).
       const roundPayload = {
         createdAt: Date.now(),
         room,
@@ -282,6 +279,11 @@ export default function Host() {
 
   function goToGame() {
     nav('/game')
+  }
+
+  function revealFasit3s() {
+    setShowFasit(true)
+    setTimeout(() => setShowFasit(false), 3000)
   }
 
   return (
@@ -386,31 +388,61 @@ export default function Host() {
 
             {buildMsg && <small className="badge">{buildMsg}</small>}
 
-            {built && built.length > 0 && (
+            {built && (
               <div className="vstack" style={{ marginTop: 8 }}>
                 <strong>Runde klar – {built.length} spørsmål</strong>
-                <div
-                  className="vstack"
-                  style={{
-                    maxHeight: 260,
-                    overflow: 'auto',
-                    border: '1px dashed #ddd',
-                    borderRadius: 12,
-                    padding: 8,
-                  }}
-                >
-                  {built.map((t, i) => (
-                    <div key={t.id} className="hstack" style={{ justifyContent: 'space-between' }}>
-                      <div>
-                        <span className="badge" style={{ marginRight: 8 }}>{i + 1}</span>
-                        <strong>{t.name}</strong>
-                        <small style={{ marginLeft: 6, color: '#666' }}>— {t.artistNames.join(', ')}</small>
+
+                {/* BLIND MODE: vis bare plassholdere; fasit skjult som standard */}
+                {!showFasit ? (
+                  <div
+                    className="vstack"
+                    style={{
+                      maxHeight: 260,
+                      overflow: 'auto',
+                      border: '1px dashed #ddd',
+                      borderRadius: 12,
+                      padding: 8,
+                      background: '#fafafa',
+                    }}
+                  >
+                    {built.map((_, i) => (
+                      <div key={i} className="hstack" style={{ justifyContent: 'space-between' }}>
+                        <div>
+                          <span className="badge" style={{ marginRight: 8 }}>{i + 1}</span>
+                          <span style={{ opacity: 0.65 }}>Skjult tittel/artist</span>
+                        </div>
+                        <small className="muted">?</small>
                       </div>
-                      <small className="muted">{Math.round((t.duration_ms || 0) / 1000)} s</small>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div
+                    className="vstack"
+                    style={{
+                      maxHeight: 260,
+                      overflow: 'auto',
+                      border: '1px dashed #ddd',
+                      borderRadius: 12,
+                      padding: 8,
+                    }}
+                  >
+                    {built.map((t, i) => (
+                      <div key={t.id} className="hstack" style={{ justifyContent: 'space-between' }}>
+                        <div>
+                          <span className="badge" style={{ marginRight: 8 }}>{i + 1}</span>
+                          <strong>{t.name}</strong>
+                          <small style={{ marginLeft: 6, color: '#666' }}>— {t.artistNames.join(', ')}</small>
+                        </div>
+                        <small className="muted">{Math.round((t.duration_ms || 0) / 1000)} s</small>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 <div className="hstack" style={{ gap: 8 }}>
+                  <button className="ghost" onClick={revealFasit3s} title="Vis fasit kort (3 s)">
+                    Fasit (3 s)
+                  </button>
                   <button className="primary" onClick={goToGame}>Send til spill</button>
                 </div>
               </div>
