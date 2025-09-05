@@ -1,18 +1,20 @@
 import { CFG } from '../config'
 import { randomString, sha256 } from './pkce'
 
-// Scopes vi trenger for Web Playback + spillelister
+// Scopes for Web Playback + spillelister + profil-info (/me)
 const SCOPES = [
   'streaming',
   'user-read-playback-state',
   'user-modify-playback-state',
   'playlist-read-private',
   'playlist-read-collaborative',
+  'user-read-email',        // nødvendig for /v1/me i noen miljø
+  'user-read-private'       // nødvendig for /v1/me i noen miljø
 ].join(' ')
 
 /**
- * Start Spotify-innlogging (Authorization Code + PKCE)
- * Viser alltid samtykkevindu (show_dialog=true) for å sikre riktige scopes.
+ * Start Spotify-innlogging (Authorization Code + PKCE).
+ * show_dialog=true tvinger nytt samtykke slik at token får riktige scopes.
  */
 export function beginLogin() {
   const verifier = randomString(64)
@@ -29,13 +31,13 @@ export function beginLogin() {
     url.searchParams.set('code_challenge_method', 'S256')
     url.searchParams.set('code_challenge', code_challenge)
     url.searchParams.set('scope', SCOPES)
-    url.searchParams.set('show_dialog', 'true') // tving re-consent for riktige scopes
+    url.searchParams.set('show_dialog', 'true') // tving re-consent
     window.location.href = url.toString()
   })
 }
 
 /**
- * Bytt kode mot access_token hos Spotify
+ * Bytt "code" mot access_token hos Spotify
  */
 export async function exchangeCodeForToken(code: string) {
   const verifier = sessionStorage.getItem('pkce_verifier')!
@@ -72,16 +74,13 @@ export async function exchangeCodeForToken(code: string) {
 
 /**
  * Hent gyldig access token fra localStorage.
- * (Hvis det er utløpt returnerer vi null; UI kan da be om ny innlogging.)
+ * Returnerer null hvis utløpt (UI kan da be om ny innlogging).
  */
 export function getAccessToken(): string | null {
   const raw = localStorage.getItem('spotify_token')
   if (!raw) return null
   const t = JSON.parse(raw)
-  // liten margin på 60s for sikkerhet
-  if (t.expires_at - 60 < Math.floor(Date.now() / 1000)) {
-    return null
-  }
+  if (t.expires_at - 60 < Math.floor(Date.now() / 1000)) return null
   return t.access_token as string
 }
 
