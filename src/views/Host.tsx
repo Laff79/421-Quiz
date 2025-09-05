@@ -5,9 +5,7 @@ import { SpotifyAPI } from '../spotify/api'
 import { getAccessToken } from '../auth/spotifyAuth'
 
 const TEST_TRACK = '11dFghVXANMlKmJXsNCbNl' // Spotify demo-låt
-const PAGE_SIZE = 200
-const PLAYLIST_FIELDS =
-  'items(id,name,owner(display_name,id),tracks(total)),next,total'
+const PAGE_SIZE = 50 // Spotify tillater maks 50 på /me/playlists
 
 type SimplePlaylist = {
   id: string
@@ -60,7 +58,7 @@ export default function Host() {
     }
   }
 
-  // --- Spilleliste-velger (lazy paging + søk + vis flere) ---
+  // --- Spilleliste-velger (paging + søk + vis flere) ---
   const [loadingPl, setLoadingPl] = React.useState(false)
   const [playlists, setPlaylists] = React.useState<SimplePlaylist[]>([])
   const [selected, setSelected] = React.useState<Set<string>>(new Set())
@@ -83,7 +81,7 @@ export default function Host() {
     const res = await fetch(url, {
       headers: { Authorization: `Bearer ${token}` },
     })
-    // Enkel 429-håndtering
+    // Håndter rate limit (429)
     if (res.status === 429) {
       const wait = parseInt(res.headers.get('Retry-After') || '2', 10) * 1000
       await new Promise((r) => setTimeout(r, wait))
@@ -101,9 +99,9 @@ export default function Host() {
       setPlError(null)
       setLoadingPl(true)
       setPlaylists([])
+      setSelected(new Set())
       const url = new URL('https://api.spotify.com/v1/me/playlists')
-      url.searchParams.set('limit', String(PAGE_SIZE))
-      url.searchParams.set('fields', PLAYLIST_FIELDS)
+      url.searchParams.set('limit', String(PAGE_SIZE)) // ikke bruk fields her – kan gi 400 på noen kontoer
       const page = await fetchPage(url.toString())
       setPlaylists(toSimple(page.items))
       setNextUrl(page.next || null)
@@ -150,9 +148,7 @@ export default function Host() {
   return (
     <div className="card vstack">
       <h2>Vertspanel</h2>
-      <div>
-        Rom: <span className="badge">{room}</span>
-      </div>
+      <div>Rom: <span className="badge">{room}</span></div>
 
       <hr />
 
@@ -160,15 +156,9 @@ export default function Host() {
       <div className="vstack">
         <strong>Lydtest</strong>
         <div className="hstack" style={{ gap: 8, flexWrap: 'wrap' }}>
-          <button className="primary" onClick={initPlayer}>
-            Start nettleser-spiller
-          </button>
-          <button className="ghost" onClick={playTest}>
-            Spill testsang
-          </button>
-          <button className="ghost" onClick={pauseTest}>
-            Pause
-          </button>
+          <button className="primary" onClick={initPlayer}>Start nettleser-spiller</button>
+          <button className="ghost" onClick={playTest}>Spill testsang</button>
+          <button className="ghost" onClick={pauseTest}>Pause</button>
         </div>
         <small className="badge">{status}</small>
       </div>
@@ -180,11 +170,7 @@ export default function Host() {
         <strong>Spilleliste-velger</strong>
 
         <div className="hstack" style={{ gap: 8, flexWrap: 'wrap' }}>
-          <button
-            className="primary"
-            onClick={loadPlaylistsFirst}
-            disabled={loadingPl}
-          >
+          <button className="primary" onClick={loadPlaylistsFirst} disabled={loadingPl}>
             {loadingPl ? 'Henter…' : 'Hent spillelister'}
           </button>
           <input
@@ -220,10 +206,7 @@ export default function Host() {
                 <label
                   key={pl.id}
                   className="hstack"
-                  style={{
-                    justifyContent: 'space-between',
-                    padding: '6px 4px',
-                  }}
+                  style={{ justifyContent: 'space-between', padding: '6px 4px' }}
                 >
                   <div className="hstack" style={{ gap: 8 }}>
                     <input
@@ -233,7 +216,7 @@ export default function Host() {
                     />
                     <div>
                       <div style={{ fontWeight: 600 }}>{pl.name}</div>
-                      <small className="muted">
+                      <small style={{ color: '#666' }}>
                         {pl.tracksTotal} spor • {pl.owner || 'ukjent eier'}
                       </small>
                     </div>
