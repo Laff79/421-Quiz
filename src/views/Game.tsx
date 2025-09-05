@@ -107,7 +107,7 @@ export default function Game() {
       setDeviceId(id)
       await SpotifyAPI.transferPlayback(id)
       setPlayerStatus(`Klar (device: ${id})`)
-      // Viktig: ikke auto-start første spørsmål her (brukeren skal trykke "Start runde")
+      // Ikke auto-start – bruker trykker "Start runde"
     } catch (e: any) {
       setPlayerStatus('Feil: ' + (e?.message || 'ukjent'))
     }
@@ -302,12 +302,8 @@ export default function Game() {
                 </button>
               ) : (
                 <>
-                  <button className="primary" onClick={nextQuestion}>
-                    Neste spørsmål
-                  </button>
-                  <button className="ghost" onClick={() => revealFasit(true)}>
-                    Fasit (3 s)
-                  </button>
+                  <button className="primary" onClick={nextQuestion}>Neste spørsmål</button>
+                  <button className="ghost" onClick={() => revealFasit(true)}>Fasit (3 s)</button>
                   <button className="ghost" onClick={resetToFirst} title="Tilbake til første spørsmål">
                     Start på nytt (til #1)
                   </button>
@@ -331,6 +327,25 @@ export default function Game() {
             {buzz && <span className="badge">Buzz: {buzz.name}</span>}
           </div>
 
+          {/* Fasit vises kun i reveal-fasen (3 s) */}
+          {roomState.phase === 'reveal' && q && (
+            <div
+              className="vstack"
+              style={{
+                marginTop: 12,
+                border: '1px dashed #ddd',
+                borderRadius: 12,
+                padding: 10,
+                background: '#fafafa',
+              }}
+            >
+              <strong>FASIT</strong>
+              <small className="muted">
+                {q.artistNames.join(', ')} — {q.name}
+              </small>
+            </div>
+          )}
+
           {/* Scoreboard */}
           <div className="vstack" style={{ marginTop: 8 }}>
             <strong>Score</strong>
@@ -348,13 +363,6 @@ export default function Game() {
                 </div>
               ))}
             </div>
-          </div>
-
-          {/* (Teknisk info – kan skjules) */}
-          <div className="vstack" style={{ marginTop: 12 }}>
-            <small className="muted">
-              Spiller nå: {q ? `${q.name} — ${q.artistNames.join(', ')}` : '—'}
-            </small>
           </div>
 
           {roomState.phase === 'ended' && (
