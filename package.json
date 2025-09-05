@@ -27,7 +27,6 @@
     "@types/react-dom": "^18.2.23",
     "typescript": "^5.5.4",
     "vite": "^5.4.1",
-    "@vitejs/plugin-react": "^4.3.1",
-    "@types/spotify-web-playback-sdk": "^0.1.24"
+    "@vitejs/plugin-react": "^4.3.1"
   }
 }
