@@ -3,54 +3,29 @@ import { useSearchParams, useNavigate } from 'react-router-dom'
 import { createWebPlayer } from '../spotify/player'
 import { SpotifyAPI } from '../spotify/api'
 import { getAccessToken } from '../auth/spotifyAuth'
+import { db } from '../firebase/init'
+import { ref, set } from 'firebase/database'
 
-const TEST_TRACK = '11dFghVXANMlKmJXsNCbNl' // Spotify demo-låt
-const PAGE_SIZE = 50                           // Spotify maks 50 på /me/playlists
-const QUESTIONS = 15                           // Standard antall spørsmål
+const TEST_TRACK = '11dFghVXANMlKmJXsNCbNl'
+const PAGE_SIZE = 50
+const QUESTIONS = 15
 
-type SimplePlaylist = {
-  id: string
-  name: string
-  tracksTotal: number
-  owner?: string
-}
-
-type RoundQ = {
-  id: string
-  uri: string
-  name: string
-  artistNames: string[]
-  duration_ms: number
-}
+type SimplePlaylist = { id: string; name: string; tracksTotal: number; owner?: string }
+type RoundQ = { id: string; uri: string; name: string; artistNames: string[]; duration_ms: number }
 
 function normalizeArtist(s: string): string {
-  return s
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/\p{Diacritic}+/gu, '')
-    .replace(/^(the\s+)/, '')
-    .replace(/\s*&\s*|\s*and\s*/g, ' ')
-    .replace(/feat\.|featuring|ft\./g, '')
-    .replace(/\s+/g, ' ')
-    .trim()
+  return s.toLowerCase().normalize('NFD').replace(/\p{Diacritic}+/gu, '')
+    .replace(/^(the\s+)/, '').replace(/\s*&\s*|\s*and\s*/g, ' ')
+    .replace(/feat\.|featuring|ft\./g, '').replace(/\s+/g, ' ').trim()
 }
-
-// Durstenfeld shuffle
-function shuffle<T>(arr: T[]): T[] {
-  const a = arr.slice()
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[a[i], a[j]] = [a[j], a[i]]
-  }
-  return a
-}
+function shuffle<T>(arr: T[]): T[] { const a = arr.slice(); for (let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]} return a }
 
 export default function Host() {
   const [search] = useSearchParams()
   const nav = useNavigate()
   const room = search.get('room') || 'EDPN-quiz'
 
-  // --- Lydtest ---
+  // Lydtest
   const [deviceId, setDeviceId] = React.useState<string | null>(null)
   const [status, setStatus] = React.useState<string>('Klar')
 
@@ -62,35 +37,19 @@ export default function Host() {
       setStatus(`Spiller klar (device: ${id}). Overfører…`)
       await SpotifyAPI.transferPlayback(id)
       setStatus('Overført til nettleser-enheten 👍')
-    } catch (e: any) {
-      setStatus('Feil ved oppstart: ' + e?.message)
-    }
+    } catch (e: any) { setStatus('Feil ved oppstart: ' + e?.message) }
   }
-
   async function playTest() {
     try {
-      if (!deviceId) {
-        setStatus('Ingen enhet – trykk “Start nettleser-spiller” først')
-        return
-      }
+      if (!deviceId) { setStatus('Ingen enhet – trykk “Start nettleser-spiller” først'); return }
       setStatus('Spiller testsang…')
       await SpotifyAPI.play({ uris: [`spotify:track:${TEST_TRACK}`] })
       setStatus('Spiller 🎵')
-    } catch (e: any) {
-      setStatus('Feil ved avspilling: ' + e?.message)
-    }
+    } catch (e: any) { setStatus('Feil ved avspilling: ' + e?.message) }
   }
+  async function pauseTest() { try { await SpotifyAPI.pause(); setStatus('Pauset ⏸') } catch (e:any){ setStatus('Feil ved pause: '+e?.message) } }
 
-  async function pauseTest() {
-    try {
-      await SpotifyAPI.pause()
-      setStatus('Pauset ⏸')
-    } catch (e: any) {
-      setStatus('Feil ved pause: ' + e?.message)
-    }
-  }
-
-  // --- Spilleliste-velger (paging + søk + vis flere) ---
+  // Spilleliste-velger
   const [loadingPl, setLoadingPl] = React.useState(false)
   const [playlists, setPlaylists] = React.useState<SimplePlaylist[]>([])
   const [selected, setSelected] = React.useState<Set<string>>(new Set())
@@ -100,198 +59,87 @@ export default function Host() {
 
   function toSimple(items: any[]): SimplePlaylist[] {
     return (items || []).map((p: any) => ({
-      id: p.id,
-      name: p.name as string,
-      tracksTotal: p.tracks?.total ?? 0,
+      id: p.id, name: p.name as string, tracksTotal: p.tracks?.total ?? 0,
       owner: p.owner?.display_name || p.owner?.id,
     }))
   }
-
   async function fetchPage(url: string) {
-    const token = getAccessToken()
-    if (!token) throw new Error('Ikke innlogget på Spotify')
-    const res = await fetch(url, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-    if (res.status === 429) {
-      const wait = parseInt(res.headers.get('Retry-After') || '2', 10) * 1000
-      await new Promise((r) => setTimeout(r, wait))
-      return fetchPage(url)
-    }
-    if (!res.ok) {
-      const txt = await res.text()
-      throw new Error(`Spotify API-feil (${res.status}): ${txt}`)
-    }
+    const token = getAccessToken(); if (!token) throw new Error('Ikke innlogget på Spotify')
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+    if (res.status === 429) { const wait = parseInt(res.headers.get('Retry-After') || '2', 10) * 1000; await new Promise(r=>setTimeout(r,wait)); return fetchPage(url) }
+    if (!res.ok) { const txt = await res.text(); throw new Error(`Spotify API-feil (${res.status}): ${txt}`) }
     return res.json()
   }
-
   async function loadPlaylistsFirst() {
     try {
-      setPlError(null)
-      setLoadingPl(true)
-      setPlaylists([])
-      setSelected(new Set())
-      const url = new URL('https://api.spotify.com/v1/me/playlists')
-      url.searchParams.set('limit', String(PAGE_SIZE))
-      const page = await fetchPage(url.toString())
-      setPlaylists(toSimple(page.items))
-      setNextUrl(page.next || null)
-    } catch (e: any) {
-      setPlError(e?.message || 'Kunne ikke hente spillelister')
-    } finally {
-      setLoadingPl(false)
-    }
+      setPlError(null); setLoadingPl(true); setPlaylists([]); setSelected(new Set())
+      const url = new URL('https://api.spotify.com/v1/me/playlists'); url.searchParams.set('limit', String(PAGE_SIZE))
+      const page = await fetchPage(url.toString()); setPlaylists(toSimple(page.items)); setNextUrl(page.next || null)
+    } catch (e:any){ setPlError(e?.message || 'Kunne ikke hente spillelister') } finally { setLoadingPl(false) }
   }
-
   async function loadMore() {
     if (!nextUrl) return
-    try {
-      setLoadingPl(true)
-      const page = await fetchPage(nextUrl)
-      setPlaylists((prev) => [...prev, ...toSimple(page.items)])
-      setNextUrl(page.next || null)
-    } catch (e: any) {
-      setPlError(e?.message || 'Kunne ikke hente flere')
-    } finally {
-      setLoadingPl(false)
-    }
+    try { setLoadingPl(true); const page = await fetchPage(nextUrl); setPlaylists(p=>[...p, ...toSimple(page.items)]); setNextUrl(page.next || null) }
+    catch (e:any){ setPlError(e?.message || 'Kunne ikke hente flere') } finally { setLoadingPl(false) }
   }
+  function toggleSelect(id: string) { setSelected(prev=>{const s=new Set(prev); s.has(id)?s.delete(id):s.add(id); return s}) }
+  const filtered = React.useMemo(()=>{ if(!q.trim()) return playlists; const qq=q.toLowerCase(); return playlists.filter(p=>p.name.toLowerCase().includes(qq)||(p.owner||'').toLowerCase().includes(qq)) },[playlists,q])
 
-  function toggleSelect(id: string) {
-    setSelected((prev) => {
-      const s = new Set(prev)
-      if (s.has(id)) s.delete(id)
-      else s.add(id)
-      return s
-    })
-  }
-
-  const filtered = React.useMemo(() => {
-    if (!q.trim()) return playlists
-    const qq = q.toLowerCase()
-    return playlists.filter(
-      (p) =>
-        p.name.toLowerCase().includes(qq) ||
-        (p.owner || '').toLowerCase().includes(qq)
-    )
-  }, [playlists, q])
-
-  // --- BYGG RUNDE (blind host) ---
+  // Bygg runde (blind host, + lagre i Firebase)
   const [building, setBuilding] = React.useState(false)
   const [built, setBuilt] = React.useState<RoundQ[] | null>(null)
   const [buildMsg, setBuildMsg] = React.useState<string>('')
-  const [showFasit, setShowFasit] = React.useState(false) // blind som standard
+  const [showFasit, setShowFasit] = React.useState(false)
 
   async function fetchPlaylistTracksAll(playlistId: string): Promise<RoundQ[]> {
-    const out: RoundQ[] = []
-    let offset = 0
-    const limit = 100
+    const out: RoundQ[] = []; let offset = 0; const limit = 100
     while (true) {
       const page = await SpotifyAPI.getPlaylistTracks(playlistId, limit, offset)
-      const items = (page.items || []) as any[]
-      for (const it of items) {
-        const t = it.track
-        if (!t || t.type !== 'track') continue
-        if (!t.id || !t.uri) continue
+      for (const it of (page.items || []) as any[]) {
+        const t = it.track; if (!t || t.type !== 'track' || !t.id || !t.uri) continue
         const artistNames = (t.artists || []).map((a: any) => a.name).filter(Boolean)
-        out.push({
-          id: t.id,
-          uri: t.uri,
-          name: t.name,
-          artistNames,
-          duration_ms: t.duration_ms || 0,
-        })
+        out.push({ id: t.id, uri: t.uri, name: t.name, artistNames, duration_ms: t.duration_ms || 0 })
       }
-      if (!page.next) break
-      offset += limit
+      if (!page.next) break; offset += limit
     }
     return out
   }
 
   async function buildRound() {
-    if (selected.size === 0) {
-      setBuildMsg('Velg minst én spilleliste først')
-      return
-    }
+    if (selected.size === 0) { setBuildMsg('Velg minst én spilleliste først'); return }
     try {
-      setBuilding(true)
-      setShowFasit(false)
-      setBuildMsg('Henter spor fra valgte spillelister…')
-      const all: RoundQ[] = []
-      const seenTrack = new Set<string>()
-      const ids = Array.from(selected)
+      setBuilding(true); setShowFasit(false); setBuildMsg('Henter spor fra valgte spillelister…')
+      const all: RoundQ[] = []; const seenTrack = new Set<string>(); const ids = Array.from(selected)
+      for (let i=0;i<ids.length;i++){ setBuildMsg(`Henter fra liste ${i+1}/${ids.length}…`); const tracks=await fetchPlaylistTracksAll(ids[i])
+        for (const t of tracks){ if(seenTrack.has(t.id)) continue; seenTrack.add(t.id); all.push(t) } }
+      if (all.length === 0) { setBuildMsg('Fant ingen spor i de valgte listene'); setBuilt(null); return }
 
-      for (let i = 0; i < ids.length; i++) {
-        const pid = ids[i]
-        setBuildMsg(`Henter fra liste ${i + 1}/${ids.length}…`)
-        const tracks = await fetchPlaylistTracksAll(pid)
-        for (const t of tracks) {
-          if (seenTrack.has(t.id)) continue // dedup mellom lister
-          seenTrack.add(t.id)
-          all.push(t)
-        }
-      }
-
-      if (all.length === 0) {
-        setBuildMsg('Fant ingen spor i de valgte listene')
-        setBuilt(null)
-        return
-      }
-
-      // Randomiser og plukk maks én pr artist (alle artister på sporet teller)
-      const shuffled = shuffle(all)
-      const usedArtists = new Set<string>()
-      const picked: RoundQ[] = []
-
+      const shuffled = shuffle(all); const usedArtists = new Set<string>(); const picked: RoundQ[] = []
       for (const t of shuffled) {
-        const normalizedSet = new Set(t.artistNames.map(normalizeArtist))
-        let clash = false
-        for (const a of normalizedSet) {
-          if (usedArtists.has(a)) { clash = true; break }
-        }
-        if (!clash) {
-          for (const a of normalizedSet) usedArtists.add(a)
-          picked.push(t)
-          if (picked.length >= QUESTIONS) break
-        }
+        const nset = new Set(t.artistNames.map(normalizeArtist)); let clash = false
+        for (const a of nset) { if (usedArtists.has(a)) { clash = true; break } }
+        if (!clash) { for (const a of nset) usedArtists.add(a); picked.push(t); if (picked.length >= QUESTIONS) break }
       }
 
-      setBuilt(picked)
-      setBuildMsg(`Runde klar: ${picked.length} spørsmål (unik artist-regel).`)
+      setBuilt(picked); setBuildMsg(`Runde klar: ${picked.length} spørsmål (unik artist-regel).`)
+      const roundPayload = { createdAt: Date.now(), room, selectedPlaylists: ids, totalCandidates: all.length, questions: picked }
 
-      // Lagre runden i sessionStorage for /game (full info),
-      // men ikke vis detaljene i Host-UI (blind som standard).
-      const roundPayload = {
-        createdAt: Date.now(),
-        room,
-        selectedPlaylists: ids,
-        totalCandidates: all.length,
-        questions: picked,
-      }
+      // Lagre både lokalt (samme fane) OG i Firebase (delbar/ny fane)
       sessionStorage.setItem('edpn_round', JSON.stringify(roundPayload))
-    } catch (e: any) {
-      setBuilt(null)
-      setBuildMsg('Feil ved bygging: ' + (e?.message || 'ukjent feil'))
-    } finally {
-      setBuilding(false)
-    }
+      await set(ref(db, `rooms/${room}/round`), roundPayload)
+    } catch (e:any){ setBuilt(null); setBuildMsg('Feil ved bygging: ' + (e?.message || 'ukjent feil')) }
+    finally { setBuilding(false) }
   }
 
-  function goToGame() {
-    nav('/game')
-  }
-
-  function revealFasit3s() {
-    setShowFasit(true)
-    setTimeout(() => setShowFasit(false), 3000)
-  }
+  function goToGame() { nav('/game?room='+encodeURIComponent(room)) }
+  function revealFasit3s() { setShowFasit(true); setTimeout(()=>setShowFasit(false), 3000) }
 
   return (
     <div className="card vstack">
       <h2>Vertspanel</h2>
       <div>Rom: <span className="badge">{room}</span></div>
 
-      <hr />
+      <hr/>
 
       {/* Lydtest */}
       <div className="vstack">
@@ -304,145 +152,52 @@ export default function Host() {
         <small className="badge">{status}</small>
       </div>
 
-      <hr />
+      <hr/>
 
       {/* Spilleliste-velger */}
       <div className="vstack">
         <strong>Spilleliste-velger</strong>
-
         <div className="hstack" style={{ gap: 8, flexWrap: 'wrap' }}>
-          <button className="primary" onClick={loadPlaylistsFirst} disabled={loadingPl}>
-            {loadingPl ? 'Henter…' : 'Hent spillelister'}
-          </button>
-          <input
-            placeholder="Søk navn/eier…"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            style={{ minWidth: 200 }}
-          />
-          <span className="badge">
-            {filtered.length}/{playlists.length} vist • {selected.size} valgt
-          </span>
+          <button className="primary" onClick={loadPlaylistsFirst} disabled={loadingPl}>{loadingPl ? 'Henter…' : 'Hent spillelister'}</button>
+          <input placeholder="Søk navn/eier…" value={q} onChange={(e)=>setQ(e.target.value)} style={{ minWidth: 200 }} />
+          <span className="badge">{filtered.length}/{playlists.length} vist • {selected.size} valgt</span>
         </div>
-
-        {plError && (
-          <small className="badge" style={{ color: '#b00020' }}>
-            {plError}
-          </small>
-        )}
-
+        {plError && <small className="badge" style={{ color: '#b00020' }}>{plError}</small>}
         {playlists.length > 0 && (
           <>
-            <div
-              className="vstack"
-              style={{
-                maxHeight: 360,
-                overflow: 'auto',
-                border: '1px solid #eee',
-                borderRadius: 12,
-                padding: 8,
-              }}
-            >
-              {filtered.map((pl) => (
-                <label
-                  key={pl.id}
-                  className="hstack"
-                  style={{ justifyContent: 'space-between', padding: '6px 4px' }}
-                >
+            <div className="vstack" style={{ maxHeight: 360, overflow: 'auto', border: '1px solid #eee', borderRadius: 12, padding: 8 }}>
+              {filtered.map(pl => (
+                <label key={pl.id} className="hstack" style={{ justifyContent: 'space-between', padding: '6px 4px' }}>
                   <div className="hstack" style={{ gap: 8 }}>
-                    <input
-                      type="checkbox"
-                      checked={selected.has(pl.id)}
-                      onChange={() => toggleSelect(pl.id)}
-                    />
+                    <input type="checkbox" checked={selected.has(pl.id)} onChange={()=>toggleSelect(pl.id)} />
                     <div>
                       <div style={{ fontWeight: 600 }}>{pl.name}</div>
-                      <small style={{ color: '#666' }}>
-                        {pl.tracksTotal} spor • {pl.owner || 'ukjent eier'}
-                      </small>
+                      <small style={{ color: '#666' }}>{pl.tracksTotal} spor • {pl.owner || 'ukjent eier'}</small>
                     </div>
                   </div>
                 </label>
               ))}
             </div>
-
             <div className="hstack" style={{ gap: 8, marginTop: 8 }}>
-              <button
-                className="ghost"
-                onClick={loadMore}
-                disabled={loadingPl || !nextUrl}
-                title={nextUrl ? '' : 'Ingen flere'}
-              >
-                {nextUrl ? 'Vis flere' : 'Ingen flere'}
-              </button>
-
-              <button
-                className="primary"
-                onClick={buildRound}
-                disabled={building || selected.size === 0}
-                title={selected.size === 0 ? 'Velg minst én liste' : ''}
-              >
-                {building ? 'Bygger runde…' : `Bygg runde (${QUESTIONS})`}
-              </button>
+              <button className="ghost" onClick={loadMore} disabled={loadingPl || !nextUrl} title={nextUrl ? '' : 'Ingen flere'}>{nextUrl ? 'Vis flere' : 'Ingen flere'}</button>
+              <button className="primary" onClick={buildRound} disabled={building || selected.size === 0} title={selected.size === 0 ? 'Velg minst én liste' : ''}>{building ? 'Bygger runde…' : `Bygg runde (${QUESTIONS})`}</button>
             </div>
-
             {buildMsg && <small className="badge">{buildMsg}</small>}
 
+            {/* BLIND MODE */}
             {built && (
               <div className="vstack" style={{ marginTop: 8 }}>
                 <strong>Runde klar – {built.length} spørsmål</strong>
-
-                {/* BLIND MODE: vis bare plassholdere; fasit skjult som standard */}
-                {!showFasit ? (
-                  <div
-                    className="vstack"
-                    style={{
-                      maxHeight: 260,
-                      overflow: 'auto',
-                      border: '1px dashed #ddd',
-                      borderRadius: 12,
-                      padding: 8,
-                      background: '#fafafa',
-                    }}
-                  >
-                    {built.map((_, i) => (
-                      <div key={i} className="hstack" style={{ justifyContent: 'space-between' }}>
-                        <div>
-                          <span className="badge" style={{ marginRight: 8 }}>{i + 1}</span>
-                          <span style={{ opacity: 0.65 }}>Skjult tittel/artist</span>
-                        </div>
-                        <small className="muted">?</small>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div
-                    className="vstack"
-                    style={{
-                      maxHeight: 260,
-                      overflow: 'auto',
-                      border: '1px dashed #ddd',
-                      borderRadius: 12,
-                      padding: 8,
-                    }}
-                  >
-                    {built.map((t, i) => (
-                      <div key={t.id} className="hstack" style={{ justifyContent: 'space-between' }}>
-                        <div>
-                          <span className="badge" style={{ marginRight: 8 }}>{i + 1}</span>
-                          <strong>{t.name}</strong>
-                          <small style={{ marginLeft: 6, color: '#666' }}>— {t.artistNames.join(', ')}</small>
-                        </div>
-                        <small className="muted">{Math.round((t.duration_ms || 0) / 1000)} s</small>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
+                <div className="vstack" style={{ maxHeight: 260, overflow: 'auto', border: '1px dashed #ddd', borderRadius: 12, padding: 8, background: '#fafafa' }}>
+                  {built.map((_, i) => (
+                    <div key={i} className="hstack" style={{ justifyContent: 'space-between' }}>
+                      <div><span className="badge" style={{ marginRight: 8 }}>{i + 1}</span><span style={{ opacity: 0.65 }}>Skjult tittel/artist</span></div>
+                      <small className="muted">?</small>
+                    </div>
+                  ))}
+                </div>
                 <div className="hstack" style={{ gap: 8 }}>
-                  <button className="ghost" onClick={revealFasit3s} title="Vis fasit kort (3 s)">
-                    Fasit (3 s)
-                  </button>
+                  <button className="ghost" onClick={revealFasit3s} title="Vis fasit kort (3 s)">Fasit (3 s)</button>
                   <button className="primary" onClick={goToGame}>Send til spill</button>
                 </div>
               </div>
@@ -451,8 +206,7 @@ export default function Host() {
         )}
       </div>
 
-      <hr />
-
+      <hr/>
       <ul>
         <li>Filtrer explicit (toggle) – kommer</li>
         <li>Start runde (poenglogikk/buzzer) – kommer</li>
