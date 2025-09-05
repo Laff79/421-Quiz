@@ -55,12 +55,26 @@ export default function Player() {
 
   async function buzz() {
     if (!uid) return
-    // Kun tillatt når fase = playing, og hvis ingen allerede har buzz
-    const bRef = ref(db, `rooms/${room}/buzz`)
-    await runTransaction(bRef, (curr) => {
-      if (curr) return curr // allerede noen som har buzzet
-      return { playerId: uid, name, at: Date.now() }
-    })
+    try {
+      // Må være i playing
+      const sSnap = await get(ref(db, `rooms/${room}/state`))
+      const s = sSnap.val() || {}
+      if (s.phase !== 'playing') {
+        alert('Venter på at nytt spørsmål spiller (fase er ikke "playing").')
+        return
+      }
+      // Forsøk å skrive buzz atomisk – hvis noen allerede buzzet, blir ikke commit
+      const bRef = ref(db, `rooms/${room}/buzz`)
+      const res = await runTransaction(bRef, (curr) => {
+        if (curr) return curr
+        return { playerId: uid, name, at: Date.now() }
+      })
+      if (!res.committed) {
+        alert(`For seint – ${res.snapshot?.val()?.name || 'en annen spiller'} buzzet først.`)
+      }
+    } catch (e:any) {
+      alert('Buzz-feil: ' + (e?.message || 'ukjent'))
+    }
   }
 
   async function sendAnswer() {
@@ -70,7 +84,6 @@ export default function Player() {
     const snap = await get(aRef)
     if (snap.exists()) return // svar allerede registrert
     await set(aRef, { playerId: uid, text: answerText, at: Date.now() })
-    // svar sendt – la host/game vurdere
   }
 
   const iAmBuzzer = buzzOwner?.playerId === uid
@@ -79,6 +92,12 @@ export default function Player() {
     <div className="card vstack">
       <h2>Spiller</h2>
       <div>Rom: <span className="badge">{room}</span></div>
+
+      {/* Statusrad for feilsøking */}
+      <div className="hstack" style={{ gap: 8, flexWrap: 'wrap', marginTop: 6 }}>
+        <span className="badge">Fase: {phase}</span>
+        <span className="badge">Buzz: {buzzOwner ? buzzOwner.name : '—'}</span>
+      </div>
 
       {!joined ? (
         <>
