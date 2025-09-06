@@ -17,6 +17,8 @@ type LastResult = {
   at: number
 }
 
+type Buzz = { playerId: string; name: string; at: number; lockWindow?: number } | null
+
 export default function Player() {
   const [search] = useSearchParams()
   const room = search.get('room') || 'EDPN-quiz'
@@ -26,7 +28,7 @@ export default function Player() {
 
   const [joined, setJoined] = React.useState(false)
   const [phase, setPhase] = React.useState<'idle'|'playing'|'buzzed'|'reveal'|'ended'>('idle')
-  const [buzzOwner, setBuzzOwner] = React.useState<{playerId:string; name:string}|null>(null)
+  const [buzzOwner, setBuzzOwner] = React.useState<Buzz>(null)
   const [answerText, setAnswerText] = React.useState('')
 
   // For å vise “poeng nå”
@@ -44,6 +46,8 @@ export default function Player() {
     return Math.max(0, (Date.now() - startedAt) / 1000)
   }
   const winScore = currentScoreAt(secsSinceStart(), wrongAtAny)
+  const iAmBuzzer = buzzOwner?.playerId === uid
+  const lockedInfo = typeof buzzOwner?.lockWindow === 'number' ? buzzOwner!.lockWindow : undefined
 
   // Lytt til romstatus + buzz + siste resultat
   React.useEffect(() => {
@@ -59,8 +63,7 @@ export default function Player() {
       if (v.phase !== 'buzzed') setAnswerText('')
     })
     const unsub2 = onValue(bRef, (snap) => {
-      const v = snap.val()
-      setBuzzOwner(v ? { playerId: v.playerId, name: v.name } : null)
+      setBuzzOwner(snap.val())
     })
     const unsub3 = onValue(rRef, (snap) => {
       const v = snap.val() as LastResult | null
@@ -98,10 +101,13 @@ export default function Player() {
         alert('Venter på at nytt spørsmål spiller (fase er ikke "playing").')
         return
       }
+      const tSec = s.startedAt ? Math.max(0, (Date.now() - s.startedAt) / 1000) : 0
+      const win = currentScoreAt(tSec, !!s.wrongAtAny)
+
       const bRef = ref(db, `rooms/${room}/buzz`)
       const res = await runTransaction(bRef, (curr) => {
         if (curr) return curr
-        return { playerId: uid, name, at: Date.now() }
+        return { playerId: uid, name, at: Date.now(), lockWindow: win }
       })
       if (!res.committed) {
         alert(`For seint – ${res.snapshot?.val()?.name || 'en annen spiller'} buzzet først.`)
@@ -120,8 +126,6 @@ export default function Player() {
     await set(aRef, { playerId: uid, text: answerText, at: Date.now() })
   }
 
-  const iAmBuzzer = buzzOwner?.playerId === uid
-
   return (
     <div className="card vstack">
       <h2>Spiller</h2>
@@ -131,7 +135,12 @@ export default function Player() {
         <span className="badge">Fase: {phase}</span>
         <span className="badge">Buzz: {buzzOwner ? buzzOwner.name : '—'}</span>
         {(phase === 'playing' || phase === 'buzzed') && (
-          <span className="badge">Poeng nå: {winScore}</span>
+          <>
+            <span className="badge">Poengvindu (4→2→1): {winScore}</span>
+            {iAmBuzzer && typeof lockedInfo === 'number' && (
+              <span className="badge">Låst poeng: {lockedInfo}</span>
+            )}
+          </>
         )}
       </div>
 
@@ -196,7 +205,7 @@ export default function Player() {
                   Send svar
                 </button>
               </div>
-              <small className="muted">Bare “Send svar”-knappen (eller Enter) leverer — klikking utenfor gjør ingenting.</small>
+              <small className="muted">Bare “Send svar” (eller Enter) leverer – klikking utenfor gjør ingenting.</small>
             </div>
           )}
         </>
