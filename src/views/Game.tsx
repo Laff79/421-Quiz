@@ -2,7 +2,7 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { SpotifyAPI } from '../spotify/api'
-import { createWebPlayer } from '../spotify/player'
+import { createWebPlayer } from '../
 import { getAccessToken } from '../auth/spotifyAuth'
 import { db } from '../firebase/init'
 import {
