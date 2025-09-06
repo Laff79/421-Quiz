@@ -4,6 +4,7 @@ import { ensureAnonAuth, db } from '../firebase/init'
 import {
   ref, set, update, onValue, runTransaction, off, get,
 } from 'firebase/database'
+import { currentScoreAt } from '../logic/score'
 
 type LastResult = {
   playerId: string
@@ -28,22 +29,34 @@ export default function Player() {
   const [buzzOwner, setBuzzOwner] = React.useState<{playerId:string; name:string}|null>(null)
   const [answerText, setAnswerText] = React.useState('')
 
+  // For å vise “poeng nå”
+  const [startedAt, setStartedAt] = React.useState<number | null>(null)
+  const [wrongAtAny, setWrongAtAny] = React.useState<boolean>(false)
+
   const [result, setResult] = React.useState<LastResult | null>(null)
 
   React.useEffect(() => {
     ensureAnonAuth().then(setUid).catch(console.error)
   }, [])
 
-  // Lytt til romstatus + buzz
+  function secsSinceStart() {
+    if (!startedAt) return 0
+    return Math.max(0, (Date.now() - startedAt) / 1000)
+  }
+  const winScore = currentScoreAt(secsSinceStart(), wrongAtAny)
+
+  // Lytt til romstatus + buzz + siste resultat
   React.useEffect(() => {
     const sRef = ref(db, `rooms/${room}/state`)
     const bRef = ref(db, `rooms/${room}/buzz`)
     const rRef = ref(db, `rooms/${room}/lastResult`)
 
     const unsub1 = onValue(sRef, (snap) => {
-      const v = snap.val()
-      if (v?.phase) setPhase(v.phase)
-      if (v?.phase !== 'buzzed') setAnswerText('')
+      const v = snap.val() || {}
+      if (v.phase) setPhase(v.phase)
+      setStartedAt(v.startedAt ?? null)
+      setWrongAtAny(!!v.wrongAtAny)
+      if (v.phase !== 'buzzed') setAnswerText('')
     })
     const unsub2 = onValue(bRef, (snap) => {
       const v = snap.val()
@@ -53,7 +66,6 @@ export default function Player() {
       const v = snap.val() as LastResult | null
       if (v && uid && v.playerId === uid) {
         setResult(v)
-        // Skjul etter ca. 3 sek
         setTimeout(() => setResult(null), 3000)
       }
     })
@@ -101,10 +113,10 @@ export default function Player() {
 
   async function sendAnswer() {
     if (!uid) return
-    if (!buzzOwner || buzzOwner.playerId !== uid) return // bare buzzer kan svare
+    if (!buzzOwner || buzzOwner.playerId !== uid) return
     const aRef = ref(db, `rooms/${room}/answer`)
     const snap = await get(aRef)
-    if (snap.exists()) return // svar allerede registrert
+    if (snap.exists()) return
     await set(aRef, { playerId: uid, text: answerText, at: Date.now() })
   }
 
@@ -115,70 +127,61 @@ export default function Player() {
       <h2>Spiller</h2>
       <div>Rom: <span className="badge">{room}</span></div>
 
-      {/* Statusrad */}
       <div className="hstack" style={{ gap: 8, flexWrap: 'wrap', marginTop: 6 }}>
         <span className="badge">Fase: {phase}</span>
         <span className="badge">Buzz: {buzzOwner ? buzzOwner.name : '—'}</span>
+        {(phase === 'playing' || phase === 'buzzed') && (
+          <span className="badge">Poeng nå: {winScore}</span>
+        )}
       </div>
 
-      {/* Resultat-banner for denne spilleren */}
       {result && (
-        <div
-          className="vstack"
-          style={{
-            marginTop: 8,
-            borderRadius: 12,
-            padding: 10,
-            border: `1px solid ${result.correct ? '#2e7d32' : '#c62828'}`,
-            background: result.correct ? '#e8f5e9' : '#ffebee',
-          }}
-        >
+        <div className={`banner ${result.correct ? 'ok' : 'err'}`} style={{ marginTop: 8 }}>
           <strong>{result.correct ? 'Riktig!' : 'Feil'}</strong>
-          <small>
-            {result.correct ? 'Du fikk' : 'Du mistet'} {Math.abs(result.points)} poeng
-            {result.window ? ` (vindu: ${result.window})` : ''}.
-            {result.accepted?.length ? ` Akseptert(e): ${result.accepted.join(', ')}.` : ''}
-          </small>
+          <div>
+            <small>
+              {result.correct ? 'Du fikk' : 'Du mistet'} {Math.abs(result.points)} poeng
+              {result.window ? ` (vindu: ${result.window})` : ''}.&nbsp;
+              {result.accepted?.length ? `Akseptert(e): ${result.accepted.join(', ')}.` : ''}
+            </small>
+          </div>
         </div>
       )}
+
+      <hr/>
 
       {!joined ? (
         <>
           <label>Spillernavn (unikt i rommet)</label>
           <input value={name} onChange={(e)=>setName(e.target.value)} />
           <div className="hstack" style={{ marginTop: 12 }}>
-            <button className="primary" onClick={join} disabled={!name.trim()}>Join</button>
+            <button onClick={join} disabled={!name.trim()}>Join</button>
           </div>
         </>
       ) : (
         <>
           <div className="hstack" style={{ gap: 8 }}>
-            <button className="ghost" onClick={leave}>Forlat</button>
+            <button onClick={leave}>Forlat</button>
           </div>
 
-          <hr/>
-
-          {/* Buzzer */}
           <div className="vstack" style={{ gap: 6 }}>
             <strong>Buzzer</strong>
             <button
-              className="primary"
-              style={{ fontSize: 24, padding: '24px 32px' }}
               onClick={buzz}
               disabled={phase !== 'playing' || !!buzzOwner}
               title={phase !== 'playing' ? 'Venter på neste spørsmål' : (buzzOwner ? `Buzz hos ${buzzOwner.name}` : '')}
+              style={{ fontSize: 28, padding: '22px 30px', borderRadius: 18 }}
             >
               STOPP
             </button>
             <small className="muted">
               {phase === 'playing' && !buzzOwner && 'Trykk når du kan artisten'}
               {phase === 'playing' && buzzOwner && `Buzz: ${buzzOwner.name}`}
-              {phase === 'buzzed' && (iAmBuzzer ? 'Du har 15 s til å svare' : 'Venter på svar')}
+              {phase === 'buzzed' && (iAmBuzzer ? 'Skriv inn og send svaret ditt' : 'Venter på svar')}
               {phase === 'reveal' && 'Fasit vises…'}
             </small>
           </div>
 
-          {/* Svarfelt – kun for buzzer */}
           {iAmBuzzer && phase === 'buzzed' && (
             <div className="vstack" style={{ marginTop: 8 }}>
               <label>Skriv artistnavn</label>
@@ -186,13 +189,14 @@ export default function Player() {
                 value={answerText}
                 onChange={(e)=>setAnswerText(e.target.value)}
                 placeholder="Artist…"
+                onKeyDown={(e)=>{ if(e.key==='Enter' && answerText.trim()) sendAnswer() }}
               />
               <div className="hstack" style={{ gap: 8, marginTop: 6 }}>
-                <button className="primary" onClick={sendAnswer} disabled={!answerText.trim()}>
+                <button onClick={sendAnswer} disabled={!answerText.trim()}>
                   Send svar
                 </button>
               </div>
-              <small className="muted">Feilsvar gir minuspoeng likt poengvinduet.</small>
+              <small className="muted">Bare “Send svar”-knappen (eller Enter) leverer — klikking utenfor gjør ingenting.</small>
             </div>
           )}
         </>
