@@ -121,8 +121,14 @@ export default function Game() {
     await set(ref(db, `rooms/${room}/answer`), null)
     await update(ref(db, `rooms/${room}/state`), { idx, phase: 'playing', startedAt: nowMs(), wrongAtAny: false, revealUntil: null })
 
-    try { await SpotifyAPI.play({ uris: [qq.uri], position_ms: 0 }); setPlayError('') }
-    catch { setPlayError('Kunne ikke starte avspilling. Trykk “Overfør avspilling hit” og prøv igjen.') }
+    try {
+      // ⬇️ Auto-overfør avspilling til denne nettleser-enheten før hvert spørsmål
+      await SpotifyAPI.transferPlayback(deviceId)
+      await SpotifyAPI.play({ uris: [qq.uri], position_ms: 0 })
+      setPlayError('')
+    } catch (e:any) {
+      setPlayError('Kunne ikke starte avspilling. Trykk “Aktiver nettleser-spiller” og/eller “Overfør avspilling hit” og prøv igjen.')
+    }
 
     // Auto-skip etter 90s (kun hvis fortsatt i "playing" når tiden er ute)
     setTimeout(async () => {
