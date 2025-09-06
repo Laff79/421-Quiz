@@ -3,6 +3,7 @@ import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { SpotifyAPI } from '../spotify/api'
 import { createWebPlayer } from '../spotify/player'
+import { getAccessToken } from '../auth/spotifyAuth'
 import { db } from '../firebase/init'
 import {
   ref, onValue, set, update, runTransaction, off, get,
@@ -37,6 +38,14 @@ type RoomState = {
 type Buzz = { playerId: string; name: string; at: number } | null
 type Answer = { playerId: string; text: string; at: number } | null
 
+type Device = {
+  id: string
+  name: string
+  is_active: boolean
+  type: string
+  volume_percent?: number
+}
+
 const ANSWER_SECONDS = 15
 const AUTO_SKIP_SECONDS = 90
 
@@ -47,6 +56,10 @@ export default function Game() {
   // Nettleser-spiller
   const [deviceId, setDeviceId] = React.useState<string | null>(null)
   const [playerStatus, setPlayerStatus] = React.useState('Ikke aktiv')
+
+  // Feilsøk/enheter
+  const [devices, setDevices] = React.useState<Device[]>([])
+  const [playError, setPlayError] = React.useState<string>('')
 
   // Rom-state
   const [roomState, setRoomState] = React.useState<RoomState>({ idx: 0, phase: 'idle' })
@@ -107,10 +120,35 @@ export default function Game() {
       setDeviceId(id)
       await SpotifyAPI.transferPlayback(id)
       setPlayerStatus(`Klar (device: ${id})`)
-      // Ikke auto-start – bruker trykker "Start runde"
+      setPlayError('')
     } catch (e: any) {
       setPlayerStatus('Feil: ' + (e?.message || 'ukjent'))
     }
+  }
+
+  // Enheter / feilsøk
+  async function refreshDevices() {
+    try {
+      const token = getAccessToken()
+      if (!token) { setDevices([]); return }
+      const res = await fetch('https://api.spotify.com/v1/me/player/devices', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const json = await res.json()
+      setDevices(json.devices || [])
+    } catch {
+      setDevices([])
+    }
+  }
+
+  async function transferHere() {
+    if (!deviceId) {
+      setPlayerStatus('Mangler nettleser-spiller – trykk “Aktiver nettleser-spiller”.')
+      return
+    }
+    await SpotifyAPI.transferPlayback(deviceId)
+    setPlayerStatus('Overført til denne fanen ✔')
+    setPlayError('')
   }
 
   // Hjelpere
@@ -143,7 +181,13 @@ export default function Game() {
       revealUntil: null,
     })
 
-    await SpotifyAPI.play({ uris: [qq.uri], position_ms: 0 })
+    try {
+      await SpotifyAPI.play({ uris: [qq.uri], position_ms: 0 })
+      setPlayError('')
+    } catch (e: any) {
+      // Vanlige feil: 404 no active device / 403
+      setPlayError('Kunne ikke starte avspilling. Trykk “Overfør avspilling hit” og prøv igjen.')
+    }
 
     // Auto-skip etter 90s
     setTimeout(() => {
@@ -269,6 +313,29 @@ export default function Game() {
           <span className="badge">{playerStatus}</span>
         </div>
         <small className="muted">Trykk denne én gang per økt (autoplay-regler).</small>
+      </div>
+
+      {/* Feilsøk lyd / enheter */}
+      <div className="vstack" style={{ gap: 6, marginBottom: 8 }}>
+        <div className="hstack" style={{ gap: 8, flexWrap: 'wrap' }}>
+          <button className="ghost" onClick={transferHere}>Overfør avspilling hit</button>
+          <button className="ghost" onClick={refreshDevices}>Sjekk enheter</button>
+          {playError && <small className="badge" style={{ color: '#b00020' }}>{playError}</small>}
+        </div>
+        {devices.length > 0 && (
+          <div className="vstack" style={{ border: '1px dashed #ddd', borderRadius: 12, padding: 8 }}>
+            <small className="muted">Spotify-enheter:</small>
+            {devices.map(d => (
+              <div key={d.id} className="hstack" style={{ justifyContent: 'space-between' }}>
+                <div>
+                  {d.name} <small className="muted">({d.type})</small>
+                </div>
+                <span className="badge">{d.is_active ? 'AKTIV' : 'idle'}</span>
+              </div>
+            ))}
+            <small className="muted">Tips: Lukk andre faner/enheter som spiller, eller trykk “Overfør avspilling hit”.</small>
+          </div>
+        )}
       </div>
 
       {!round ? (
