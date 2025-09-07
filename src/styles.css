@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Concert+One&display=swap');
 :root{
   --bg:#0e0f12;
   --panel:#151821;
@@ -11,8 +12,7 @@
 }
 *{box-sizing:border-box}
 html,body,#root{height:100%;margin:0}
-body{background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
-a{color:var(--accent);text-decoration:none}
+body{background:var(--bg);color:var(--fg);font-family:'Concert One', sans-serif;text-decoration:none}
 
 .container{max-width:980px;margin:0 auto;padding:18px}
 .card{border:1px solid var(--border);border-radius:16px;padding:16px;background:var(--panel);box-shadow:0 6px 24px rgba(0,0,0,.35)}
@@ -38,3 +38,36 @@ button[disabled]{opacity:.6;cursor:not-allowed}
 .banner.err{border-color:rgba(198,40,40,.35);background:rgba(198,40,40,.10)}
 
 hr{border:none;border-top:1px solid var(--border);margin:14px 0}
+h1, h2, h3 {
+  font-size: 1.4em;
+}
+
+button {
+  font-size: 1.1em;
+}
+
+.badge {
+  font-size: 14px;
+  padding: 6px 12px;
+}
+
+.scoreboard, .card strong {
+  font-size: 1.2em;
+}
+
+/* Farger på scoreboard basert på plassering */
+.scoreboard-row:first-child div:last-child {
+  color: #4caf50; /* grønn for høyeste score */
+  font-weight: bold;
+}
+.scoreboard-row:nth-child(2) div:last-child {
+  color: #ffca28; /* gul/oransje for andreplass */
+  font-weight: bold;
+}
+.scoreboard-row:nth-child(3) div:last-child {
+  color: #f57c00; /* oransje for tredjeplass */
+  font-weight: bold;
+}
+.scoreboard-row:last-child div:last-child {
+  color: #e53935; /* rød for laveste score */
+}
