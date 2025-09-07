@@ -1,8 +1,20 @@
 import React from 'react'
 import { Outlet, Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { beginLogin } from '../auth/spotifyAuth'
 import { ensureAnonAuth } from '../firebase/init'
 export default function App(){
+  const nav = useNavigate();
+
+  function goToActiveGame(e?: React.MouseEvent) {
+    if (e) e.preventDefault();
+    const raw = sessionStorage.getItem('edpn_round');
+    if (raw) { nav('/game'); } else { nav('/host'); }
+  }
+
+  const location = useLocation();
   React.useEffect(()=>{ ensureAnonAuth().catch(console.error) },[])
   return (<div className="container">
     <div className="hstack" style={{justifyContent:'space-between',marginBottom:12}}>

@@ -1,6 +1,6 @@
 export const CFG = {
   spotifyClientId: import.meta.env.VITE_SPOTIFY_CLIENT_ID as string,
-  redirectUri: (import.meta.env.VITE_REDIRECT_URI as string) || '/callback',
+  redirectUri: (import.meta.env.VITE_REDIRECT_URI as string) || 'https://boisterous-meerkat-f3a1ed.netlify.app/callback',
   firebase: {
     apiKey: import.meta.env.VITE_FIREBASE_API_KEY as string,
     authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN as string,

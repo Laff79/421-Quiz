@@ -71,3 +71,12 @@ button {
 .scoreboard-row:last-child div:last-child {
   color: #e53935; /* rød for laveste score */
 }
+
+nav a {
+  color: #fff !important;
+  margin-right: 12px;
+}
+nav a.active {
+  font-weight: bold;
+  text-decoration: underline;
+}

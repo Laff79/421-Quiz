@@ -36,6 +36,7 @@ export default function Player() {
   const [wrongAtAny, setWrongAtAny] = React.useState<boolean>(false)
 
   const [result, setResult] = React.useState<LastResult | null>(null)
+  const [confirmPending, setConfirmPending] = React.useState(false)
 
   React.useEffect(() => {
     ensureAnonAuth().then(setUid).catch(console.error)
@@ -60,7 +61,7 @@ export default function Player() {
       if (v.phase) setPhase(v.phase)
       setStartedAt(v.startedAt ?? null)
       setWrongAtAny(!!v.wrongAtAny)
-      if (v.phase !== 'buzzed') setAnswerText('')
+      if (v.phase !== 'buzzed') { setAnswerText(''); setConfirmPending(false) }
     })
     const unsub2 = onValue(bRef, (snap) => {
       setBuzzOwner(snap.val())
@@ -124,6 +125,22 @@ export default function Player() {
     const snap = await get(aRef)
     if (snap.exists()) return
     await set(aRef, { playerId: uid, text: answerText, at: Date.now() })
+  }
+
+  function requestSubmit() {
+    if (!answerText.trim()) return
+    // Første trykk: vis bekreftelsessteg
+    setConfirmPending(true)
+  }
+
+  function cancelSubmit() {
+    setConfirmPending(false)
+  }
+
+  async function confirmSubmit() {
+    // Kaller eksisterende sendAnswer()
+    await sendAnswer()
+    setConfirmPending(false)
   }
 
   return (
@@ -192,7 +209,7 @@ export default function Player() {
           </div>
 
           {iAmBuzzer && phase === 'buzzed' && (
-            <form className="vstack" style={{ marginTop: 8 }} onSubmit={(e)=>{e.preventDefault(); if(answerText.trim()) sendAnswer()}}>
+            <form className="vstack" style={{ marginTop: 8 }} onSubmit={(e)=>{e.preventDefault(); if(answerText.trim()) requestSubmit()}}>
               <label>Skriv artistnavn</label>
               <input
                 value={answerText}
@@ -201,10 +218,21 @@ export default function Player() {
                 onKeyDown={(e)=>{ if(e.key==='Enter' && answerText.trim()) sendAnswer() }}
               />
               <div className="hstack" style={{ gap: 8, marginTop: 6 }}>
-                <button onClick={sendAnswer} disabled={!answerText.trim()}>
+                <button onClick={requestSubmit} disabled={!answerText.trim()}>
                   Send svar
                 </button>
               </div>
+              {confirmPending && (
+                <div className="hstack" style={{ gap: 8, marginTop: 8 }}>
+                  <button className="primary" onClick={confirmSubmit} title="Send inn svaret">
+                    Er du sikker? Send inn
+                  </button>
+                  <button className="ghost" onClick={cancelSubmit} title="Gå tilbake og rediger">
+                    Avbryt
+                  </button>
+                </div>
+              )}
+
               <small className="muted">Bare “Send svar” (eller Enter) leverer – klikk utenfor gjør ingenting.</small>
             </form>
           )}
