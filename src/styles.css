@@ -1,1 +1,73 @@
-:root{--bg:#fff;--fg:#111;--accent:#e53935}*{box-sizing:border-box}html,body,#root{height:100%;margin:0}body{background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}a{color:var(--accent);text-decoration:none}.container{max-width:960px;margin:0 auto;padding:16px}.card{border:1px solid #e5e5e5;border-radius:16px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.04)}.hstack{display:flex;gap:12px;align-items:center}.vstack{display:flex;flex-direction:column;gap:8px}input{padding:10px 12px;border:1px solid #ddd;border-radius:10px}button{cursor:pointer}button.primary{background:var(--accent);border:none;color:#fff;padding:10px 14px;border-radius:12px}button.ghost{background:transparent;border:1px solid #ddd;color:var(--fg);padding:10px 14px;border-radius:12px}.badge{padding:4px 8px;border-radius:999px;background:#f4f4f4;font-size:12px}
+@import url('https://fonts.googleapis.com/css2?family=Concert+One&display=swap');
+:root{
+  --bg:#0e0f12;
+  --panel:#151821;
+  --fg:#e6e6e6;
+  --muted:#9aa3b2;
+  --border:#232735;
+  --accent:#e53935;
+  --accent-weak:#2a1a1a;
+  --ok:#2e7d32;
+  --err:#c62828;
+}
+*{box-sizing:border-box}
+html,body,#root{height:100%;margin:0}
+body{background:var(--bg);color:var(--fg);font-family:'Concert One', sans-serif;text-decoration:none}
+
+.container{max-width:980px;margin:0 auto;padding:18px}
+.card{border:1px solid var(--border);border-radius:16px;padding:16px;background:var(--panel);box-shadow:0 6px 24px rgba(0,0,0,.35)}
+
+.hstack{display:flex;gap:12px;align-items:center}
+.vstack{display:flex;flex-direction:column;gap:8px}
+
+label{font-size:14px;color:var(--muted)}
+input{padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:#0c0d11;color:var(--fg);outline:none}
+input:focus{border-color:#39425a;box-shadow:0 0 0 3px rgba(57,66,90,.25)}
+
+button{cursor:pointer;transition:transform .02s ease, filter .15s ease}
+button:active{transform:translateY(1px) scale(.995)}
+button.primary{background:var(--accent);border:none;color:#fff;padding:10px 14px;border-radius:12px}
+button.ghost{background:transparent;border:1px solid var(--border);color:var(--fg);padding:10px 14px;border-radius:12px}
+button[disabled]{opacity:.6;cursor:not-allowed}
+
+.badge{padding:4px 10px;border-radius:999px;background:#1b1f2a;border:1px solid var(--border);font-size:12px;color:var(--muted)}
+.muted{color:var(--muted)}
+
+.banner{border-radius:14px;padding:12px 14px;border:1px solid var(--border);background:#12141a}
+.banner.ok{border-color:rgba(46,125,50,.35);background:rgba(46,125,50,.12)}
+.banner.err{border-color:rgba(198,40,40,.35);background:rgba(198,40,40,.10)}
+
+hr{border:none;border-top:1px solid var(--border);margin:14px 0}
+h1, h2, h3 {
+  font-size: 1.4em;
+}
+
+button {
+  font-size: 1.1em;
+}
+
+.badge {
+  font-size: 14px;
+  padding: 6px 12px;
+}
+
+.scoreboard, .card strong {
+  font-size: 1.2em;
+}
+
+/* Farger på scoreboard basert på plassering */
+.scoreboard-row:first-child div:last-child {
+  color: #4caf50; /* grønn for høyeste score */
+  font-weight: bold;
+}
+.scoreboard-row:nth-child(2) div:last-child {
+  color: #ffca28; /* gul/oransje for andreplass */
+  font-weight: bold;
+}
+.scoreboard-row:nth-child(3) div:last-child {
+  color: #f57c00; /* oransje for tredjeplass */
+  font-weight: bold;
+}
+.scoreboard-row:last-child div:last-child {
+  color: #e53935; /* rød for laveste score */
+}
