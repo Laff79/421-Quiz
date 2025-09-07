@@ -138,7 +138,7 @@ export default function Player() {
           <>
             <span className="badge">Poengvindu (4→2→1): {winScore}</span>
             {iAmBuzzer && typeof lockedInfo === 'number' && (
-              <span className="badge">Låst poeng: {lockedInfo}</span>
+              <span className="badge">Låst poeng: {lockedInfo} (→ 2 → 1)</span>
             )}
           </>
         )}
@@ -192,7 +192,7 @@ export default function Player() {
           </div>
 
           {iAmBuzzer && phase === 'buzzed' && (
-            <div className="vstack" style={{ marginTop: 8 }}>
+            <form className="vstack" style={{ marginTop: 8 }} onSubmit={(e)=>{e.preventDefault(); if(answerText.trim()) sendAnswer()}}>
               <label>Skriv artistnavn</label>
               <input
                 value={answerText}
@@ -205,8 +205,8 @@ export default function Player() {
                   Send svar
                 </button>
               </div>
-              <small className="muted">Bare “Send svar” (eller Enter) leverer – klikking utenfor gjør ingenting.</small>
-            </div>
+              <small className="muted">Bare “Send svar” (eller Enter) leverer – klikk utenfor gjør ingenting.</small>
+            </form>
           )}
         </>
       )}

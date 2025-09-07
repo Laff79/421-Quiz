@@ -1,24 +1,11 @@
 import React from 'react'
-
-export default function Lobby() {
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
-      <div className="w-full max-w-md bg-gray-800 rounded-xl shadow-lg p-8">
-        <h1 className="text-3xl font-bold text-center mb-6">Velkommen til Quiz 🎵</h1>
-        
-        <p className="text-center mb-4 text-gray-300">
-          Vent på at verten starter spillet, eller bli med som spiller.
-        </p>
-
-        <div className="flex flex-col space-y-4">
-          <button className="w-full py-3 rounded-lg bg-green-600 hover:bg-green-700 transition font-semibold">
-            Bli med som spiller
-          </button>
-          <button className="w-full py-3 rounded-lg bg-blue-600 hover:bg-blue-700 transition font-semibold">
-            Start som vert
-          </button>
-        </div>
-      </div>
-    </div>
-  )
+import { useNavigate } from 'react-router-dom'
+export default function Lobby(){
+  const nav=useNavigate(); const [room,setRoom]=React.useState('EDPN-quiz')
+  return (<div className="card vstack"><h2>Lobby</h2><label>Romnavn</label>
+    <input value={room} onChange={e=>setRoom(e.target.value)} placeholder="Velg romnavn"/>
+    <div className="hstack" style={{marginTop:12}}>
+      <button className="primary" onClick={()=>nav('/host?room='+encodeURIComponent(room))}>Start som vert</button>
+      <button className="ghost" onClick={()=>nav('/player?room='+encodeURIComponent(room))}>Bli med som spiller</button>
+    </div><p className="muted">Del romnavnet på storskjerm eller som QR (kommer i vertspanelet).</p></div>)
 }

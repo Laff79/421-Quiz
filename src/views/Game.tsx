@@ -109,7 +109,7 @@ export default function Game() {
   // Hjelpere
   function nowMs() { return Date.now() }
   function secsSinceStart(s: RoomState) { return !s.startedAt ? 0 : Math.max(0, (nowMs() - s.startedAt) / 1000) }
-  function windowScore(s: RoomState) { return currentScoreAt(secsSinceStart(s), s.wrongAtAny) }
+  function windowScore(s: RoomState) {  if (s.phase === 'buzzed') {    try { if (buzz && typeof buzz.lockWindow === 'number') return buzz.lockWindow as any } catch {}  }  return currentScoreAt(secsSinceStart(s), s.wrongAtAny)}
 
   async function startQuestion(nextIdx?: number) {
     if (!round) return
@@ -270,9 +270,9 @@ export default function Game() {
             {(roomState.phase !== 'idle' && roomState.phase !== 'ended') && (
               <>
                 <span className="badge">Tid: {tSec}s</span>
-                <span className="badge">Poengvindu (4→2→1): {winScore}</span>
+                <span className="badge">Poeng nå: {winScore} (deretter 2 → 1)</span>
                 {typeof lockedInfo === 'number' && buzz && (
-                  <span className="badge">Låst ({buzz.name}): {lockedInfo}</span>
+                  <span className="badge">Låst poeng ({buzz.name}): {lockedInfo} (→ 2 → 1)</span>
                 )}
                 {roomState.wrongAtAny && <span className="badge">Første feil registrert</span>}
               </>
