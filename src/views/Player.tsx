@@ -211,13 +211,24 @@ export default function Player() {
                 value={answerText}
                 onChange={(e)=>setAnswerText(e.target.value)}
                 placeholder="Artist…"
-                onKeyDown={(e)=>{ if(e.key==='Enter' && answerText.trim()) sendAnswer() }}
+                onKeyDown={(e)=>{ if(e.key==='Enter' && answerText.trim()) requestSubmit() }}
               />
               <div className="hstack" style={{ gap: 8, marginTop: 6 }}>
                 <button onClick={requestSubmit} disabled={!answerText.trim()}>
                   Send svar
                 </button>
-              </div>
+              
+              {confirmPending && (
+                <div className="hstack" style={{ gap: 8, marginTop: 8 }}>
+                  <button className="primary" onClick={confirmSubmit} title="Send inn svaret">
+                    Er du sikker? Send inn
+                  </button>
+                  <button className="ghost" onClick={cancelSubmit} title="Gå tilbake og rediger">
+                    Avbryt
+                  </button>
+                </div>
+              )}
+
               <small className="muted">Bare “Send svar” (eller Enter) leverer – klikking utenfor gjør ingenting.</small>
             </div>
           )}
