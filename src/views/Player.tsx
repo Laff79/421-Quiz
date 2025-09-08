@@ -218,6 +218,8 @@ export default function Player() {
                   Send svar
                 </button>
               
+              </div>
+
               {confirmPending && (
                 <div className="hstack" style={{ gap: 8, marginTop: 8 }}>
                   <button className="primary" onClick={confirmSubmit} title="Send inn svaret">
