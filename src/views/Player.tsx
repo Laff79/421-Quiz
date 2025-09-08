@@ -36,6 +36,7 @@ export default function Player() {
   const [wrongAtAny, setWrongAtAny] = React.useState<boolean>(false)
 
   const [result, setResult] = React.useState<LastResult | null>(null)
+  const [buzzing, setBuzzing] = React.useState(false)
   const [confirmPending, setConfirmPending] = React.useState(false)
 
   React.useEffect(() => {
@@ -94,6 +95,9 @@ export default function Player() {
   }
 
   async function buzz() {
+    if (buzzing) return;
+    setBuzzing(true);
+    try {
     if (!uid) return
     try {
       const sSnap = await get(ref(db, `rooms/${room}/state`))
@@ -116,7 +120,13 @@ export default function Player() {
     } catch (e:any) {
       alert('Buzz-feil: ' + (e?.message || 'ukjent'))
     }
+  
+    } finally { setBuzzing(false) }
   }
+
+  function requestSubmit(){ if(!answerText.trim()) return; setConfirmPending(true) }
+  function cancelSubmit(){ setConfirmPending(false) }
+  async function confirmSubmit(){ await sendAnswer(); setConfirmPending(false) }
 
   async function sendAnswer() {
     if (!uid) return
@@ -125,22 +135,6 @@ export default function Player() {
     const snap = await get(aRef)
     if (snap.exists()) return
     await set(aRef, { playerId: uid, text: answerText, at: Date.now() })
-  }
-
-  function requestSubmit() {
-    if (!answerText.trim()) return
-    // Første trykk: vis bekreftelsessteg
-    setConfirmPending(true)
-  }
-
-  function cancelSubmit() {
-    setConfirmPending(false)
-  }
-
-  async function confirmSubmit() {
-    // Kaller eksisterende sendAnswer()
-    await sendAnswer()
-    setConfirmPending(false)
   }
 
   return (
@@ -155,7 +149,7 @@ export default function Player() {
           <>
             <span className="badge">Poengvindu (4→2→1): {winScore}</span>
             {iAmBuzzer && typeof lockedInfo === 'number' && (
-              <span className="badge">Låst poeng: {lockedInfo} (→ 2 → 1)</span>
+              <span className="badge">Låst poeng: {lockedInfo}</span>
             )}
           </>
         )}
@@ -179,7 +173,7 @@ export default function Player() {
       {!joined ? (
         <>
           <label>Spillernavn (unikt i rommet)</label>
-          <input value={name} onChange={(e)=>setName(e.target.value)} />
+          <input autoFocus inputMode="text" enterKeyHint="send" autoComplete="off" value={name} onChange={(e)=>setName(e.target.value)} />
           <div className="hstack" style={{ marginTop: 12 }}>
             <button onClick={join} disabled={!name.trim()}>Join</button>
           </div>
@@ -194,7 +188,9 @@ export default function Player() {
             <strong>Buzzer</strong>
             <button
               onClick={buzz}
-              disabled={phase !== 'playing' || !!buzzOwner}
+              disabled={phase !== 'playing' || !!buzzOwner || buzzing}
+              aria-label="Buzz / Stopp"
+              className="buzzer-primary"
               title={phase !== 'playing' ? 'Venter på neste spørsmål' : (buzzOwner ? `Buzz hos ${buzzOwner.name}` : '')}
               style={{ fontSize: 28, padding: '22px 30px', borderRadius: 18 }}
             >
@@ -209,7 +205,7 @@ export default function Player() {
           </div>
 
           {iAmBuzzer && phase === 'buzzed' && (
-            <form className="vstack" style={{ marginTop: 8 }} onSubmit={(e)=>{e.preventDefault(); if(answerText.trim()) requestSubmit()}}>
+            <div className="vstack" style={{ marginTop: 8 }}>
               <label>Skriv artistnavn</label>
               <input
                 value={answerText}
@@ -222,19 +218,8 @@ export default function Player() {
                   Send svar
                 </button>
               </div>
-              {confirmPending && (
-                <div className="hstack" style={{ gap: 8, marginTop: 8 }}>
-                  <button className="primary" onClick={confirmSubmit} title="Send inn svaret">
-                    Er du sikker? Send inn
-                  </button>
-                  <button className="ghost" onClick={cancelSubmit} title="Gå tilbake og rediger">
-                    Avbryt
-                  </button>
-                </div>
-              )}
-
-              <small className="muted">Bare “Send svar” (eller Enter) leverer – klikk utenfor gjør ingenting.</small>
-            </form>
+              <small className="muted">Bare “Send svar” (eller Enter) leverer – klikking utenfor gjør ingenting.</small>
+            </div>
           )}
         </>
       )}

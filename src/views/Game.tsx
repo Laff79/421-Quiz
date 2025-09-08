@@ -109,7 +109,7 @@ export default function Game() {
   // Hjelpere
   function nowMs() { return Date.now() }
   function secsSinceStart(s: RoomState) { return !s.startedAt ? 0 : Math.max(0, (nowMs() - s.startedAt) / 1000) }
-  function windowScore(s: RoomState) {  if (s.phase === 'buzzed') {    try { if (buzz && typeof buzz.lockWindow === 'number') return buzz.lockWindow as any } catch {}  }  return currentScoreAt(secsSinceStart(s), s.wrongAtAny)}
+  function windowScore(s: RoomState) { return currentScoreAt(secsSinceStart(s), s.wrongAtAny) }
 
   async function startQuestion(nextIdx?: number) {
     if (!round) return
@@ -262,15 +262,19 @@ export default function Game() {
             </div>
           </div>
 
+          <div className="btn-row" style={{ marginTop: 8 }}>
+  <button className="ghost" onClick={() => nav("/")}>Til Lobby</button>
+</div>
+
           <hr />
 
           {/* Statuslinje */}
-          <div className="hstack" style={{ gap: 12, flexWrap: 'wrap' }}>
+          <div className="hstack sticky-top" style={{ gap: 12, flexWrap: 'wrap' }}>
             <span className="badge">Fase: {roomState.phase}</span>
             {(roomState.phase !== 'idle' && roomState.phase !== 'ended') && (
               <>
                 <span className="badge">Tid: {tSec}s</span>
-                <span className="badge">Poeng nå: {winScore} (deretter 2 → 1)</span>
+                <span className="badge">Poeng nå: {roomState.phase === 'buzzed' && typeof lockedInfo === 'number' ? lockedInfo : winScore} (deretter 2 → 1)</span>
                 {typeof lockedInfo === 'number' && buzz && (
                   <span className="badge">Låst poeng ({buzz.name}): {lockedInfo} (→ 2 → 1)</span>
                 )}
@@ -289,7 +293,7 @@ export default function Game() {
           )}
 
           {/* Scoreboard */}
-          <div className="vstack" style={{ marginTop: 8 }}>
+          <div className="vstack scoreboard" style={{ marginTop: 8 }}>
             <strong>Score</strong>
             <div className="vstack" style={{ border: '1px solid #eee', borderRadius: 12, padding: 8, maxHeight: 220, overflow: 'auto' }}>
               {Object.entries(players).length === 0 && (<small className="muted">Ingen spillere enda – be folk åpne /player og joine.</small>)}
