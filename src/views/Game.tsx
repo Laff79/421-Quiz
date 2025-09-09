@@ -32,7 +32,7 @@ export default function Game() {
   const [roomState, setRoomState] = React.useState<RoomState>({ idx: 0, phase: 'idle' })
   const [buzz, setBuzz] = React.useState<Buzz>(null)
   const [answer, setAnswer] = React.useState<Answer>(null)
-  const [players, setPlayers] = React.useState<Record<string, { name: string; score: number }>>({})
+  const [players, setPlayers] = React.useState<Record<string, { name: string; score: number; lastSeen?: number }>>({})
 
   const room = round?.room || 'EDPN-quiz'
   const q = round?.questions?.[roomState.idx]
@@ -176,7 +176,6 @@ export default function Game() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [answer?.playerId, answer?.text])
 
-  // 🔥 Oppdatert funksjon
   async function applyAnswerResult(correct: boolean, text: string, playerId: string) {
     const sSnap = await get(ref(db, `rooms/${room}/state`))
     const s = (sSnap.val() || {}) as RoomState
@@ -243,6 +242,8 @@ export default function Game() {
   const tSec = Math.floor(secsSinceStart(roomState))
   const winScore = windowScore(roomState)
   const lockedInfo = buzz?.lockWindow
+
+  const activePlayers = Object.entries(players).filter(([_, p]) => (p.lastSeen || 0) >= (round?.createdAt || 0))
 
   return (
     <div className="card vstack">
@@ -318,8 +319,8 @@ export default function Game() {
           <div className="vstack scoreboard" style={{ marginTop: 8 }}>
             <strong>Score</strong>
             <div className="vstack" style={{ border: '1px solid #eee', borderRadius: 12, padding: 8, maxHeight: 220, overflow: 'auto' }}>
-              {Object.entries(players).length === 0 && (<small className="muted">Ingen spillere enda – be folk åpne /player og joine.</small>)}
-              {Object.entries(players).map(([pid, p]) => (
+              {activePlayers.length === 0 && (<small className="muted">Ingen spillere enda – be folk åpne /player og joine.</small>)}
+              {activePlayers.map(([pid, p]) => (
                 <div key={pid} className="hstack" style={{ justifyContent: 'space-between' }}>
                   <div>{p.name}</div>
                   <div style={{ fontWeight: 600 }}>{p.score ?? 0}</div>
