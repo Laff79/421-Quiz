@@ -122,7 +122,6 @@ export default function Game() {
     await update(ref(db, `rooms/${room}/state`), { idx, phase: 'playing', startedAt: nowMs(), wrongAtAny: false, revealUntil: null })
 
     try {
-      // ⬇️ Auto-overfør avspilling til denne nettleser-enheten før hvert spørsmål
       await SpotifyAPI.transferPlayback(deviceId)
       await SpotifyAPI.play({ uris: [qq.uri], position_ms: 0 })
       setPlayError('')
@@ -130,7 +129,6 @@ export default function Game() {
       setPlayError('Kunne ikke starte avspilling. Trykk “Aktiver nettleser-spiller” og/eller “Overfør avspilling hit” og prøv igjen.')
     }
 
-    // Auto-skip etter 90s (kun hvis fortsatt i "playing" når tiden er ute)
     setTimeout(async () => {
       const sSnap = await get(ref(db, `rooms/${room}/state`))
       const s = (sSnap.val() || {}) as RoomState
@@ -159,31 +157,26 @@ export default function Game() {
     await update(ref(db, `rooms/${room}/state`), { idx: 0, phase: 'idle', startedAt: null, wrongAtAny: false, revealUntil: null } as any)
   }
 
-  // Buzz → pause (ingen tidsfrist/auto-feil). lockWindow brukes ved evaluering.
   React.useEffect(() => {
     if (!buzz || roomState.phase !== 'playing') return
     ;(async () => {
       try { await SpotifyAPI.pause() } catch {}
       await update(ref(db, `rooms/${room}/state`), { phase: 'buzzed' })
     })()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [buzz?.playerId])
 
-  // Vurder svar
   React.useEffect(() => {
     if (!answer || !round) return
     ;(async () => {
       const ok = isArtistMatch(answer.text || '', (round.questions[roomState.idx]?.artistNames) || [], 0.85)
       await applyAnswerResult(ok, answer.text, answer.playerId)
     })()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [answer?.playerId, answer?.text])
 
   async function applyAnswerResult(correct: boolean, text: string, playerId: string) {
     const sSnap = await get(ref(db, `rooms/${room}/state`))
     const s = (sSnap.val() || {}) as RoomState
 
-    // Bruk låst vindu hvis svaret kommer fra aktuell buzzer
     const bSnap = await get(ref(db, `rooms/${room}/buzz`))
     const b = bSnap.val() as Buzz
     const isFromBuzzer = b && b.playerId === playerId
@@ -192,21 +185,41 @@ export default function Game() {
     const tSec = secsSinceStart(s)
     let scoreWindow = typeof locked === 'number' ? locked : currentScoreAt(tSec, s.wrongAtAny)
 
-    // Første feil i 4-vinduet senker resten av spørsmålet til 2
-    const shouldDropToTwo = !correct && !s.wrongAtAny && scoreWindow === 4
-
     const delta = correct ? scoreWindow : -scoreWindow
-    await runTransaction(ref(db, `rooms/${room}/players/${playerId}/score`), (curr) => (typeof curr === 'number' ? curr : 0) + delta)
-    if (shouldDropToTwo) await update(ref(db, `rooms/${room}/state`), { wrongAtAny: true })
+    await runTransaction(
+      ref(db, `rooms/${room}/players/${playerId}/score`),
+      (curr) => (typeof curr === 'number' ? curr : 0) + delta
+    )
+
+    if (!correct && !s.wrongAtAny && scoreWindow === 4) {
+      await update(ref(db, `rooms/${room}/state`), { wrongAtAny: true })
+    }
 
     const idx = typeof s.idx === 'number' ? s.idx : roomState.idx
     const accepted = round!.questions[idx]?.artistNames || []
     const pname = players[playerId]?.name || 'Spiller'
-    await set(ref(db, `rooms/${room}/lastResult`), { playerId, name: pname, correct, points: delta, window: Math.abs(scoreWindow), text, accepted, at: Date.now() })
-    await revealFasit(false)
+    await set(ref(db, `rooms/${room}/lastResult`), {
+      playerId,
+      name: pname,
+      correct,
+      points: delta,
+      window: Math.abs(scoreWindow),
+      text,
+      accepted,
+      at: Date.now(),
+    })
+
+    if (correct) {
+      // ✅ riktig svar → fasit + neste sang
+      await revealFasit(false)
+    } else {
+      // ❌ feil svar → la låta fortsette
+      await update(ref(db, `rooms/${room}/state`), { phase: 'playing' })
+      await set(ref(db, `rooms/${room}/buzz`), null)
+      await set(ref(db, `rooms/${room}/answer`), null)
+    }
   }
 
-  // UI
   const tSec = Math.floor(secsSinceStart(roomState))
   const winScore = windowScore(roomState)
   const lockedInfo = buzz?.lockWindow
@@ -263,8 +276,8 @@ export default function Game() {
           </div>
 
           <div className="btn-row" style={{ marginTop: 8 }}>
-  <button className="ghost" onClick={() => nav("/")}>Til Lobby</button>
-</div>
+            <button className="ghost" onClick={() => nav("/")}>Til Lobby</button>
+          </div>
 
           <hr />
 
