@@ -45,6 +45,9 @@ export default function Player() {
   // status
   const [connecting, setConnecting] = React.useState(true)
 
+  // dummy-state for å trigge re-render hvert sekund
+  const [tick, setTick] = React.useState(0)
+
   React.useEffect(() => {
     ensureAnonAuth()
       .then((id) => { setUid(id); setConnecting(false) })
@@ -57,7 +60,6 @@ export default function Player() {
   }
   const winScore = currentScoreAt(secsSinceStart(), wrongAtAny)
   const iAmBuzzer = buzzOwner?.playerId === uid
-  const lockedInfo = typeof buzzOwner?.lockWindow === 'number' ? buzzOwner!.lockWindow : undefined
 
   // Lytt til romstatus + buzz + siste resultat + egen score
   React.useEffect(() => {
@@ -91,6 +93,14 @@ export default function Player() {
 
     return () => { off(sRef); off(bRef); off(rRef); if (pRef) off(pRef); unsub1(); unsub2(); unsub3(); unsub4() }
   }, [room, uid])
+
+  // Oppdater tick hvert sekund når vi spiller → winScore oppdateres live
+  React.useEffect(() => {
+    if (phase === 'playing' || phase === 'buzzed') {
+      const iv = setInterval(() => setTick((t) => t + 1), 1000)
+      return () => clearInterval(iv)
+    }
+  }, [phase, startedAt, wrongAtAny])
 
   async function join() {
     if (!uid) return
