@@ -7,7 +7,7 @@ import { getAccessToken } from '../auth/spotifyAuth'
 import { db } from '../firebase/init'
 import { ref, set } from 'firebase/database'
 
-const TEST_TRACK = '11dFghVXANMlKmJXsNCbNl' // Spotify demo-låt
+const TEST_TRACK = '11dFghVXANMlKmJXsNCbNl'
 const PAGE_SIZE = 50
 const QUESTIONS = 15
 
@@ -26,7 +26,6 @@ type RoundQ = {
   duration_ms: number
 }
 
-// Diakritikksafe normalisering
 function normalizeArtist(s: string): string {
   return s
     .toLowerCase()
@@ -39,7 +38,6 @@ function normalizeArtist(s: string): string {
     .trim()
 }
 
-// Shuffle
 function shuffle<T>(arr: T[]): T[] {
   const a = arr.slice()
   for (let i = a.length - 1; i > 0; i--) {
@@ -54,7 +52,7 @@ export default function Host() {
   const nav = useNavigate()
   const room = search.get('room') || 'EDPN-quiz'
 
-  // Inviter spillere
+  // Invitasjon
   const playerUrl = React.useMemo(
     () => `${window.location.origin}/player?room=${encodeURIComponent(room)}`,
     [room]
@@ -303,10 +301,10 @@ export default function Host() {
         questions: picked,
       }
 
-      // 🔥 LAGRE i Firebase
+      // 🔥 Lagre i Firebase
       await set(ref(db, `rooms/${room}/round`), roundPayload)
 
-      // Også i sessionStorage (fallback)
+      // Også lokalt som fallback
       sessionStorage.setItem('edpn_round', JSON.stringify(roundPayload))
     } catch (e: any) {
       setBuilt(null)
@@ -330,8 +328,219 @@ export default function Host() {
       <h2>Vertspanel</h2>
       <div>Rom: <span className="badge">{room}</span></div>
 
-      {/* Hele UI-et (inviter spillere, vert-spiller, lydtest, spillelistevelger, bygg runde osv.) */}
-      {/* ... din eksisterende render-kode her ... */}
+      {/* Inviter spillere */}
+      <hr />
+      <div className="vstack">
+        <strong>Inviter spillere</strong>
+        <div className="hstack" style={{ gap: 8, flexWrap: 'wrap' }}>
+          <input
+            readOnly
+            value={playerUrl}
+            onFocus={(e) => e.currentTarget.select()}
+            style={{ minWidth: 280 }}
+          />
+          <button className="primary" onClick={copyLink}>Kopier lenke</button>
+          <button className="ghost" onClick={shareLink}>Del…</button>
+          <button className="ghost" onClick={() => setShowQR(v => !v)}>
+            {showQR ? 'Skjul QR' : 'Vis QR'}
+          </button>
+        </div>
+        {copyMsg && <small className="badge">{copyMsg}</small>}
+        {showQR && (
+          <div className="vstack" style={{ marginTop: 8, alignItems: 'flex-start' }}>
+            <img
+              width={180}
+              height={180}
+              alt="QR-kode for spiller-lenke"
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(playerUrl)}`}
+            />
+            <small className="muted">Spillere kan skanne for å bli med.</small>
+          </div>
+        )}
+      </div>
+
+      {/* Verts-spiller */}
+      <hr />
+      <div className="vstack">
+        <strong>Verts-spiller</strong>
+        <div className="hstack" style={{ gap: 8, flexWrap: 'wrap' }}>
+          <input
+            value={hostName}
+            onChange={(e) => setHostName(e.target.value)}
+            placeholder="Ditt spillernavn"
+            style={{ minWidth: 200 }}
+          />
+          <button
+            className="primary"
+            onClick={() =>
+              window.open(
+                `/player?room=${encodeURIComponent(room)}&name=${encodeURIComponent(hostName)}`,
+                '_blank'
+              )
+            }
+          >
+            Bli med som spiller (ny fane)
+          </button>
+        </div>
+        <small className="badge">Tips: åpne denne på mobilen din hvis du vil buzze der.</small>
+      </div>
+
+      {/* Lydtest */}
+      <hr />
+      <div className="vstack">
+        <strong>Lydtest</strong>
+        <div className="hstack" style={{ gap: 8, flexWrap: 'wrap' }}>
+          <button className="primary" onClick={initPlayer}>Start nettleser-spiller</button>
+          <button className="ghost" onClick={playTest}>Spill testsang</button>
+          <button className="ghost" onClick={pauseTest}>Pause</button>
+        </div>
+        <small className="badge">{status}</small>
+      </div>
+
+      {/* Spilleliste-velger */}
+      <hr />
+      <div className="vstack">
+        <strong>Spilleliste-velger</strong>
+
+        <div className="hstack" style={{ gap: 8, flexWrap: 'wrap' }}>
+          <button className="primary" onClick={loadPlaylistsFirst} disabled={loadingPl}>
+            {loadingPl ? 'Henter…' : 'Hent spillelister'}
+          </button>
+          <input
+            placeholder="Søk navn/eier…"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            style={{ minWidth: 200 }}
+          />
+          <span className="badge">
+            {filtered.length}/{playlists.length} vist • {selected.size} valgt
+          </span>
+        </div>
+
+        {plError && (
+          <small className="badge" style={{ color: '#b00020' }}>
+            {plError}
+          </small>
+        )}
+
+        {playlists.length > 0 && (
+          <>
+            <div
+              className="vstack"
+              style={{
+                maxHeight: 360,
+                overflow: 'auto',
+                border: '1px solid #eee',
+                borderRadius: 12,
+                padding: 8,
+              }}
+            >
+              {filtered.map((pl) => (
+                <label
+                  key={pl.id}
+                  className="hstack"
+                  style={{ justifyContent: 'space-between', padding: '6px 4px' }}
+                >
+                  <div className="hstack" style={{ gap: 8 }}>
+                    <input
+                      type="checkbox"
+                      checked={selected.has(pl.id)}
+                      onChange={() => toggleSelect(pl.id)}
+                    />
+                    <div>
+                      <div style={{ fontWeight: 600 }}>{pl.name}</div>
+                      <small style={{ color: '#666' }}>
+                        {pl.tracksTotal} spor • {pl.owner || 'ukjent eier'}
+                      </small>
+                    </div>
+                  </div>
+                </label>
+              ))}
+            </div>
+
+            <div className="hstack" style={{ gap: 8, marginTop: 8 }}>
+              <button
+                className="ghost"
+                onClick={loadMore}
+                disabled={loadingPl || !nextUrl}
+                title={nextUrl ? '' : 'Ingen flere'}
+              >
+                {nextUrl ? 'Vis flere' : 'Ingen flere'}
+              </button>
+
+              <button
+                className="primary"
+                onClick={buildRound}
+                disabled={building || selected.size === 0}
+                title={selected.size === 0 ? 'Velg minst én liste' : ''}
+              >
+                {building ? 'Bygger runde…' : `Bygg runde (${QUESTIONS})`}
+              </button>
+            </div>
+
+            {buildMsg && <small className="badge">{buildMsg}</small>}
+
+            {built && (
+              <div className="vstack" style={{ marginTop: 8 }}>
+                <strong>Runde klar – {built.length} spørsmål</strong>
+
+                {!showFasit ? (
+                  <div
+                    className="vstack"
+                    style={{
+                      maxHeight: 260,
+                      overflow: 'auto',
+                      border: '1px dashed #ddd',
+                      borderRadius: 12,
+                      padding: 8,
+                      background: '#fafafa',
+                    }}
+                  >
+                    {built.map((_, i) => (
+                      <div key={i} className="hstack" style={{ justifyContent: 'space-between' }}>
+                        <div>
+                          <span className="badge" style={{ marginRight: 8 }}>{i + 1}</span>
+                          <span style={{ opacity: 0.65 }}>Skjult tittel/artist</span>
+                        </div>
+                        <small className="muted">?</small>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div
+                    className="vstack"
+                    style={{
+                      maxHeight: 260,
+                      overflow: 'auto',
+                      border: '1px dashed #ddd',
+                      borderRadius: 12,
+                      padding: 8,
+                    }}
+                  >
+                    {built.map((t, i) => (
+                      <div key={t.id} className="hstack" style={{ justifyContent: 'space-between' }}>
+                        <div>
+                          <span className="badge" style={{ marginRight: 8 }}>{i + 1}</span>
+                          <strong>{t.name}</strong>
+                          <small style={{ marginLeft: 6, color: '#666' }}>— {t.artistNames.join(', ')}</small>
+                        </div>
+                        <small className="muted">{Math.round((t.duration_ms || 0) / 1000)} s</small>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="hstack" style={{ gap: 8 }}>
+                  <button className="ghost" onClick={revealFasit3s} title="Vis fasit kort (3 s)">
+                    Fasit (3 s)
+                  </button>
+                  <button className="primary" onClick={goToGame}>Send til spill</button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   )
 }
