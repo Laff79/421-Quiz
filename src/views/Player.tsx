@@ -42,8 +42,13 @@ export default function Player() {
   // egen poengsum
   const [myScore, setMyScore] = React.useState<number>(0)
 
+  // status
+  const [connecting, setConnecting] = React.useState(true)
+
   React.useEffect(() => {
-    ensureAnonAuth().then(setUid).catch(console.error)
+    ensureAnonAuth()
+      .then((id) => { setUid(id); setConnecting(false) })
+      .catch((err) => { console.error(err); setConnecting(false) })
   }, [])
 
   function secsSinceStart() {
@@ -56,6 +61,8 @@ export default function Player() {
 
   // Lytt til romstatus + buzz + siste resultat + egen score
   React.useEffect(() => {
+    if (!room) return
+
     const sRef = ref(db, `rooms/${room}/state`)
     const bRef = ref(db, `rooms/${room}/buzz`)
     const rRef = ref(db, `rooms/${room}/lastResult`)
@@ -76,6 +83,7 @@ export default function Player() {
         setTimeout(() => setResult(null), 3000)
       }
     })
+
     let unsub4 = () => {}
     if (pRef) {
       unsub4 = onValue(pRef, (snap) => { setMyScore(snap.val() || 0) })
@@ -146,10 +154,86 @@ export default function Player() {
     <div className="card vstack">
       <h2>Spiller</h2>
       <div>Rom: <span className="badge">{room}</span></div>
-      {joined && <div>Poeng: <span className="badge">{myScore}</span></div>}
 
-      {/* resten av UI er uendret */}
-      {/* ... */}
+      {connecting && <div><small className="muted">Kobler til…</small></div>}
+
+      {joined && (
+        <div style={{ marginTop: 10, marginBottom: 10, fontSize: 28, fontWeight: 'bold', textAlign: 'center' }}>
+          Dine poeng: {myScore}
+        </div>
+      )}
+
+      {!joined ? (
+        <>
+          <label>Spillernavn (unikt i rommet)</label>
+          <input
+            autoFocus
+            inputMode="text"
+            enterKeyHint="send"
+            autoComplete="off"
+            value={name}
+            onChange={(e)=>setName(e.target.value)}
+          />
+          <div className="hstack" style={{ marginTop: 12 }}>
+            <button onClick={join} disabled={!name.trim() || !uid}>Join</button>
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="hstack" style={{ gap: 8 }}>
+            <button onClick={leave}>Forlat</button>
+          </div>
+
+          <div className="vstack" style={{ gap: 6 }}>
+            <strong>Buzzer</strong>
+            <button
+              onClick={buzz}
+              disabled={phase !== 'playing' || !!buzzOwner || buzzing}
+              aria-label="Buzz / Stopp"
+              className="buzzer-primary"
+              style={{ fontSize: 28, padding: '22px 30px', borderRadius: 18 }}
+            >
+              STOPP
+            </button>
+            <small className="muted">
+              {phase === 'playing' && !buzzOwner && 'Trykk når du kan artisten'}
+              {phase === 'playing' && buzzOwner && `Buzz: ${buzzOwner.name}`}
+              {phase === 'buzzed' && (iAmBuzzer ? 'Skriv inn og send svaret ditt' : 'Venter på svar')}
+              {phase === 'reveal' && 'Fasit vises…'}
+            </small>
+          </div>
+
+          {iAmBuzzer && phase === 'buzzed' && (
+            <div className="vstack" style={{ marginTop: 8 }}>
+              <label>Skriv artistnavn</label>
+              <input
+                value={answerText}
+                onChange={(e)=>setAnswerText(e.target.value)}
+                placeholder="Artist…"
+                onKeyDown={(e)=>{ if(e.key==='Enter' && answerText.trim()) requestSubmit() }}
+              />
+              <div className="hstack" style={{ gap: 8, marginTop: 6 }}>
+                <button onClick={requestSubmit} disabled={!answerText.trim()}>
+                  Send svar
+                </button>
+              </div>
+
+              {confirmPending && (
+                <div className="hstack" style={{ gap: 8, marginTop: 8 }}>
+                  <button className="primary" onClick={confirmSubmit} title="Send inn svaret">
+                    Er du sikker? Send inn
+                  </button>
+                  <button className="ghost" onClick={cancelSubmit} title="Gå tilbake og rediger">
+                    Avbryt
+                  </button>
+                </div>
+              )}
+
+              <small className="muted">Bare “Send svar” (eller Enter) leverer – klikking utenfor gjør ingenting.</small>
+            </div>
+          )}
+        </>
+      )}
     </div>
   )
 }
