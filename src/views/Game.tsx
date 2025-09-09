@@ -200,7 +200,7 @@ export default function Game() {
     }
 
     const idx = typeof s.idx === 'number' ? s.idx : roomState.idx
-    const accepted = round!.questions[idx]?.artistNames || []
+    const accepted = correct ? (round!.questions[idx]?.artistNames || []) : []
     const pname = players[playerId]?.name || 'Spiller'
     await set(ref(db, `rooms/${room}/lastResult`), {
       playerId,
@@ -214,10 +214,8 @@ export default function Game() {
     })
 
     if (correct) {
-      // ✅ Riktig svar → fasit + neste sang
       await revealFasit(false)
     } else {
-      // ❌ Feil svar → ingen fasit, fortsett låta
       await update(ref(db, `rooms/${room}/state`), { phase: 'playing' })
       await set(ref(db, `rooms/${room}/buzz`), null)
       await set(ref(db, `rooms/${room}/answer`), null)
