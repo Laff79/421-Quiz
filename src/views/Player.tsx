@@ -39,6 +39,13 @@ export default function Player() {
   const [buzzing, setBuzzing] = React.useState(false)
   const [confirmPending, setConfirmPending] = React.useState(false)
 
+  // 🔔 Ny: tving re-render hvert sekund
+  const [tick, setTick] = React.useState(0)
+  React.useEffect(() => {
+    const id = setInterval(() => setTick(t => t + 1), 1000)
+    return () => clearInterval(id)
+  }, [])
+
   React.useEffect(() => {
     ensureAnonAuth().then(setUid).catch(console.error)
   }, [])
