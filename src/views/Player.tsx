@@ -98,29 +98,28 @@ export default function Player() {
     if (buzzing) return;
     setBuzzing(true);
     try {
-    if (!uid) return
-    try {
-      const sSnap = await get(ref(db, `rooms/${room}/state`))
-      const s = sSnap.val() || {}
-      if (s.phase !== 'playing') {
-        alert('Venter på at nytt spørsmål spiller (fase er ikke "playing").')
-        return
-      }
-      const tSec = s.startedAt ? Math.max(0, (Date.now() - s.startedAt) / 1000) : 0
-      const win = currentScoreAt(tSec, !!s.wrongAtAny)
+      if (!uid) return
+      try {
+        const sSnap = await get(ref(db, `rooms/${room}/state`))
+        const s = sSnap.val() || {}
+        if (s.phase !== 'playing') {
+          alert('Venter på at nytt spørsmål spiller (fase er ikke "playing").')
+          return
+        }
+        const tSec = s.startedAt ? Math.max(0, (Date.now() - s.startedAt) / 1000) : 0
+        const win = currentScoreAt(tSec, !!s.wrongAtAny)
 
-      const bRef = ref(db, `rooms/${room}/buzz`)
-      const res = await runTransaction(bRef, (curr) => {
-        if (curr) return curr
-        return { playerId: uid, name, at: Date.now(), lockWindow: win }
-      })
-      if (!res.committed) {
-        alert(`For seint – ${res.snapshot?.val()?.name || 'en annen spiller'} buzzet først.`)
+        const bRef = ref(db, `rooms/${room}/buzz`)
+        const res = await runTransaction(bRef, (curr) => {
+          if (curr) return curr
+          return { playerId: uid, name, at: Date.now(), lockWindow: win }
+        })
+        if (!res.committed) {
+          alert(`For seint – ${res.snapshot?.val()?.name || 'en annen spiller'} buzzet først.`)
+        }
+      } catch (e:any) {
+        alert('Buzz-feil: ' + (e?.message || 'ukjent'))
       }
-    } catch (e:any) {
-      alert('Buzz-feil: ' + (e?.message || 'ukjent'))
-    }
-  
     } finally { setBuzzing(false) }
   }
 
@@ -147,7 +146,12 @@ export default function Player() {
         <span className="badge">Buzz: {buzzOwner ? buzzOwner.name : '—'}</span>
         {(phase === 'playing' || phase === 'buzzed') && (
           <>
-            <span className="badge">Poengvindu (4→2→1): {winScore}</span>
+            <span className="badge">
+              Poeng nå: {winScore}
+              {winScore === 4 && " (deretter 2 → 1)"}
+              {winScore === 2 && " (deretter 1)"}
+              {winScore === 1 && " (siste sjanse)"}
+            </span>
             {iAmBuzzer && typeof lockedInfo === 'number' && (
               <span className="badge">Låst poeng: {lockedInfo}</span>
             )}
@@ -217,7 +221,6 @@ export default function Player() {
                 <button onClick={requestSubmit} disabled={!answerText.trim()}>
                   Send svar
                 </button>
-              
               </div>
 
               {confirmPending && (
