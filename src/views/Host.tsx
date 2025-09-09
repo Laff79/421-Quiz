@@ -7,7 +7,7 @@ import { getAccessToken } from '../auth/spotifyAuth'
 import { db } from '../firebase/init'
 import { ref, set } from 'firebase/database'
 
-const TEST_TRACK = '11dFghVXANMlKmJXsNCbNl'
+const TEST_TRACK = '11dFghVXANMlKmJXsNCbNl' // Spotify demo-låt
 const PAGE_SIZE = 50
 const QUESTIONS = 15
 
@@ -26,6 +26,7 @@ type RoundQ = {
   duration_ms: number
 }
 
+// Diakritikksafe normalisering
 function normalizeArtist(s: string): string {
   return s
     .toLowerCase()
@@ -38,6 +39,7 @@ function normalizeArtist(s: string): string {
     .trim()
 }
 
+// Shuffle
 function shuffle<T>(arr: T[]): T[] {
   const a = arr.slice()
   for (let i = a.length - 1; i > 0; i--) {
@@ -52,6 +54,7 @@ export default function Host() {
   const nav = useNavigate()
   const room = search.get('room') || 'EDPN-quiz'
 
+  // Inviter spillere
   const playerUrl = React.useMemo(
     () => `${window.location.origin}/player?room=${encodeURIComponent(room)}`,
     [room]
@@ -81,8 +84,10 @@ export default function Host() {
     copyLink()
   }
 
+  // Vert som spiller
   const [hostName, setHostName] = React.useState('Vert')
 
+  // Spotify nettleser-spiller
   const [deviceId, setDeviceId] = React.useState<string | null>(null)
   const [status, setStatus] = React.useState<string>('Klar')
 
@@ -95,7 +100,7 @@ export default function Host() {
       await SpotifyAPI.transferPlayback(id)
       setStatus('Overført til nettleser-enheten 👍')
     } catch (e: any) {
-      setStatus('Feil ved oppstart: ' + e?.message)
+      setStatus('Feil ved oppstart: ' + (e?.message || 'ukjent'))
     }
   }
 
@@ -122,6 +127,7 @@ export default function Host() {
     }
   }
 
+  // Spilleliste-velger
   const [loadingPl, setLoadingPl] = React.useState(false)
   const [playlists, setPlaylists] = React.useState<SimplePlaylist[]>([])
   const [selected, setSelected] = React.useState<Set<string>>(new Set())
@@ -207,6 +213,7 @@ export default function Host() {
     )
   }, [playlists, q])
 
+  // Bygg runde
   const [building, setBuilding] = React.useState(false)
   const [built, setBuilt] = React.useState<RoundQ[] | null>(null)
   const [buildMsg, setBuildMsg] = React.useState<string>('')
@@ -299,7 +306,7 @@ export default function Host() {
       // 🔥 LAGRE i Firebase
       await set(ref(db, `rooms/${room}/round`), roundPayload)
 
-      // behold også lokalt som fallback
+      // Også i sessionStorage (fallback)
       sessionStorage.setItem('edpn_round', JSON.stringify(roundPayload))
     } catch (e: any) {
       setBuilt(null)
@@ -323,7 +330,8 @@ export default function Host() {
       <h2>Vertspanel</h2>
       <div>Rom: <span className="badge">{room}</span></div>
 
-      {/* resten av UI uendret */}
+      {/* Hele UI-et (inviter spillere, vert-spiller, lydtest, spillelistevelger, bygg runde osv.) */}
+      {/* ... din eksisterende render-kode her ... */}
     </div>
   )
 }
