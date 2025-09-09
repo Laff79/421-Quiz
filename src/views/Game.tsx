@@ -220,12 +220,20 @@ export default function Game() {
       await set(ref(db, `rooms/${room}/buzz`), null)
       await set(ref(db, `rooms/${room}/answer`), null)
 
-      // 🎵 fortsett låta der den slapp
+      // 🎵 fortsett låta der den slapp (bruk Spotify REST API)
       try {
-        const status = await SpotifyAPI.getMyCurrentPlaybackState()
-        const pos = status?.progress_ms || 0
-        const qq = round!.questions[idx]
-        await SpotifyAPI.play({ uris: [qq.uri], position_ms: pos })
+        const token = getAccessToken()
+        if (token) {
+          const res = await fetch("https://api.spotify.com/v1/me/player", {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+          if (res.ok) {
+            const json = await res.json()
+            const pos = json?.progress_ms || 0
+            const qq = round!.questions[idx]
+            await SpotifyAPI.play({ uris: [qq.uri], position_ms: pos })
+          }
+        }
       } catch (e) {
         console.error("Kunne ikke starte låta igjen:", e)
       }
@@ -239,8 +247,7 @@ export default function Game() {
   return (
     <div className="card vstack">
       <h2>Spillvisning</h2>
-      {/* resten av render-koden er uendret */}
-      {/* ... */}
+      {/* resten av UI-koden uendret */}
     </div>
   )
 }
