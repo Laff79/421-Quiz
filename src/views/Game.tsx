@@ -24,15 +24,11 @@ export default function Game() {
   const nav = useNavigate()
   const [round, setRound] = React.useState<RoundPayload | null>(null)
 
-  // Nettleser-spiller
   const [deviceId, setDeviceId] = React.useState<string | null>(null)
   const [playerStatus, setPlayerStatus] = React.useState('Ikke aktiv')
-
-  // Enheter og feilsøk
   const [devices, setDevices] = React.useState<Device[]>([])
   const [playError, setPlayError] = React.useState<string>('')
 
-  // Rom-state
   const [roomState, setRoomState] = React.useState<RoomState>({ idx: 0, phase: 'idle' })
   const [buzz, setBuzz] = React.useState<Buzz>(null)
   const [answer, setAnswer] = React.useState<Answer>(null)
@@ -41,7 +37,7 @@ export default function Game() {
   const room = round?.room || 'EDPN-quiz'
   const q = round?.questions?.[roomState.idx]
 
-  // 🚀 Last runden fra Firebase
+  // 🚀 Hent runden fra Firebase
   React.useEffect(() => {
     if (!room) return
     const rRef = ref(db, `rooms/${room}/round`)
@@ -57,9 +53,7 @@ export default function Game() {
     if (!room) return
     ;(async () => {
       const sSnap = await get(ref(db, `rooms/${room}/state`))
-      if (!sSnap.exists()) {
-        await set(ref(db, `rooms/${room}/state`), { idx: 0, phase: 'idle' })
-      }
+      if (!sSnap.exists()) await set(ref(db, `rooms/${room}/state`), { idx: 0, phase: 'idle' })
     })()
   }, [room])
 
@@ -79,7 +73,7 @@ export default function Game() {
     return () => { off(sRef); off(bRef); off(aRef); off(pRef); unsub1(); unsub2(); unsub3(); unsub4() }
   }, [room])
 
-  // Spotify-player
+  // Spotify nettleser-spiller
   async function initWebPlayer() {
     try {
       setPlayerStatus('Aktiverer…')
@@ -105,10 +99,7 @@ export default function Game() {
   }
 
   async function transferHere() {
-    if (!deviceId) {
-      setPlayerStatus('Mangler nettleser-spiller – trykk “Aktiver nettleser-spiller”.')
-      return
-    }
+    if (!deviceId) { setPlayerStatus('Mangler nettleser-spiller – trykk “Aktiver nettleser-spiller”.'); return }
     await SpotifyAPI.transferPlayback(deviceId)
     setPlayerStatus('Overført til denne fanen ✔')
     setPlayError('')
@@ -121,25 +112,20 @@ export default function Game() {
 
   async function startQuestion(nextIdx?: number) {
     if (!round) return
-    if (!deviceId) {
-      setPlayerStatus('Mangler nettleser-spiller – trykk “Aktiver nettleser-spiller”.')
-      return
-    }
+    if (!deviceId) { setPlayerStatus('Mangler nettleser-spiller – trykk “Aktiver nettleser-spiller”.'); return }
     const idx = typeof nextIdx === 'number' ? nextIdx : roomState.idx
     const qq = round.questions[idx]; if (!qq) return
 
     await set(ref(db, `rooms/${room}/buzz`), null)
     await set(ref(db, `rooms/${room}/answer`), null)
-    await update(ref(db, `rooms/${room}/state`), {
-      idx, phase: 'playing', startedAt: nowMs(), wrongAtAny: false, revealUntil: null
-    })
+    await update(ref(db, `rooms/${room}/state`), { idx, phase: 'playing', startedAt: nowMs(), wrongAtAny: false, revealUntil: null })
 
     try {
       await SpotifyAPI.transferPlayback(deviceId)
       await SpotifyAPI.play({ uris: [qq.uri], position_ms: 0 })
       setPlayError('')
     } catch (e:any) {
-      setPlayError('Kunne ikke starte avspilling. Aktiver spiller og/eller overfør avspilling hit.')
+      setPlayError('Kunne ikke starte avspilling. Trykk “Aktiver nettleser-spiller” og/eller “Overfør avspilling hit” og prøv igjen.')
     }
 
     setTimeout(async () => {
@@ -159,10 +145,7 @@ export default function Game() {
   async function nextQuestion() {
     if (!round) return
     const next = roomState.idx + 1
-    if (next >= round.questions.length) {
-      await update(ref(db, `rooms/${room}/state`), { phase: 'ended' })
-      return
-    }
+    if (next >= round.questions.length) { await update(ref(db, `rooms/${room}/state`), { phase: 'ended' }); return }
     await startQuestion(next)
   }
 
@@ -170,18 +153,17 @@ export default function Game() {
     await SpotifyAPI.pause().catch(() => {})
     await set(ref(db, `rooms/${room}/buzz`), null)
     await set(ref(db, `rooms/${room}/answer`), null)
-    await update(ref(db, `rooms/${room}/state`), {
-      idx: 0, phase: 'idle', startedAt: null, wrongAtAny: false, revealUntil: null
-    } as any)
+    await update(ref(db, `rooms/${room}/state`), { idx: 0, phase: 'idle', startedAt: null, wrongAtAny: false, revealUntil: null } as any)
   }
 
-  // Buzz → pause musikken
+  // Buzz → pause
   React.useEffect(() => {
     if (!buzz || roomState.phase !== 'playing') return
     ;(async () => {
       try { await SpotifyAPI.pause() } catch {}
       await update(ref(db, `rooms/${room}/state`), { phase: 'buzzed' })
     })()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [buzz?.playerId])
 
   // Vurder svar
@@ -191,8 +173,10 @@ export default function Game() {
       const ok = isArtistMatch(answer.text || '', (round.questions[roomState.idx]?.artistNames) || [], 0.85)
       await applyAnswerResult(ok, answer.text, answer.playerId)
     })()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [answer?.playerId, answer?.text])
 
+  // 🔥 Oppdatert funksjon
   async function applyAnswerResult(correct: boolean, text: string, playerId: string) {
     const sSnap = await get(ref(db, `rooms/${room}/state`))
     const s = (sSnap.val() || {}) as RoomState
@@ -230,15 +214,14 @@ export default function Game() {
     })
 
     if (correct) {
-      // ✅ riktig svar → fasit + neste sang
+      // ✅ Riktig svar → fasit + neste sang
       await revealFasit(false)
     } else {
-      // ❌ feil svar → la låta fortsette
+      // ❌ Feil svar → ingen fasit, fortsett låta
       await update(ref(db, `rooms/${room}/state`), { phase: 'playing' })
       await set(ref(db, `rooms/${room}/buzz`), null)
       await set(ref(db, `rooms/${room}/answer`), null)
 
-      // 🎵 fortsett låta der den slapp
       try {
         const token = getAccessToken()
         if (token) {
@@ -258,6 +241,7 @@ export default function Game() {
     }
   }
 
+  // UI
   const tSec = Math.floor(secsSinceStart(roomState))
   const winScore = windowScore(roomState)
   const lockedInfo = buzz?.lockWindow
@@ -266,7 +250,7 @@ export default function Game() {
     <div className="card vstack">
       <h2>Spillvisning</h2>
 
-      {/* Spotify kontrollknapper */}
+      {/* Kontroller */}
       <div className="vstack" style={{ marginBottom: 8 }}>
         <div className="hstack" style={{ gap: 8, flexWrap: 'wrap' }}>
           <button onClick={initWebPlayer}>Aktiver nettleser-spiller</button>
@@ -284,7 +268,6 @@ export default function Game() {
         </p>
       ) : (
         <>
-          {/* Info + kontroll */}
           <div className="hstack" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <div>Rom: <span className="badge">{room}</span></div>
@@ -292,32 +275,32 @@ export default function Game() {
             </div>
             <div className="hstack" style={{ gap: 8, flexWrap: 'wrap' }}>
               {roomState.phase === 'idle' ? (
-                <button onClick={() => startQuestion(0)}>Start runde (spm #1)</button>
+                <button onClick={() => startQuestion(0)} title={!deviceId ? 'Aktiver først' : ''}>Start runde (spm #1)</button>
               ) : (
                 <>
                   <button onClick={nextQuestion}>Neste spørsmål</button>
                   <button onClick={() => revealFasit(true)}>Fasit (3 s)</button>
-                  <button onClick={resetToFirst}>Start på nytt (til #1)</button>
+                  <button onClick={resetToFirst} title="Tilbake til første spørsmål">Start på nytt (til #1)</button>
                 </>
               )}
             </div>
           </div>
 
+          <div className="btn-row" style={{ marginTop: 8 }}>
+            <button className="ghost" onClick={() => nav("/")}>Til Lobby</button>
+          </div>
+
           <hr />
 
-          {/* Statuslinje */}
+          {/* Status */}
           <div className="hstack sticky-top" style={{ gap: 12, flexWrap: 'wrap' }}>
             <span className="badge">Fase: {roomState.phase}</span>
             {(roomState.phase !== 'idle' && roomState.phase !== 'ended') && (
               <>
                 <span className="badge">Tid: {tSec}s</span>
-                <span className="badge">
-                  Poeng nå: {roomState.phase === 'buzzed' && typeof lockedInfo === 'number'
-                    ? lockedInfo
-                    : winScore} (deretter 2 → 1)
-                </span>
+                <span className="badge">Poeng nå: {roomState.phase === 'buzzed' && typeof lockedInfo === 'number' ? lockedInfo : winScore} (deretter 2 → 1)</span>
                 {typeof lockedInfo === 'number' && buzz && (
-                  <span className="badge">Låst poeng ({buzz.name}): {lockedInfo}</span>
+                  <span className="badge">Låst poeng ({buzz.name}): {lockedInfo} (→ 2 → 1)</span>
                 )}
                 {roomState.wrongAtAny && <span className="badge">Første feil registrert</span>}
               </>
@@ -337,9 +320,7 @@ export default function Game() {
           <div className="vstack scoreboard" style={{ marginTop: 8 }}>
             <strong>Score</strong>
             <div className="vstack" style={{ border: '1px solid #eee', borderRadius: 12, padding: 8, maxHeight: 220, overflow: 'auto' }}>
-              {Object.entries(players).length === 0 && (
-                <small className="muted">Ingen spillere enda – be folk åpne /player og joine.</small>
-              )}
+              {Object.entries(players).length === 0 && (<small className="muted">Ingen spillere enda – be folk åpne /player og joine.</small>)}
               {Object.entries(players).map(([pid, p]) => (
                 <div key={pid} className="hstack" style={{ justifyContent: 'space-between' }}>
                   <div>{p.name}</div>
@@ -353,7 +334,7 @@ export default function Game() {
             <div className="vstack" style={{ marginTop: 16 }}>
               <strong>Ferdig 🎉</strong>
               <div className="hstack" style={{ gap: 8 }}>
-                <button onClick={resetToFirst}>Start på nytt</button>
+                <button onClick={resetToFirst}>Start på nytt (til #1)</button>
                 <button onClick={() => nav('/host')}>Tilbake til Vert</button>
               </div>
             </div>
