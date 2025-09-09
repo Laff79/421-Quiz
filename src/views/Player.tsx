@@ -158,8 +158,38 @@ export default function Player() {
       {connecting && <div><small className="muted">Kobler til…</small></div>}
 
       {joined && (
-        <div style={{ marginTop: 10, marginBottom: 10, fontSize: 28, fontWeight: 'bold', textAlign: 'center' }}>
-          Dine poeng: {myScore}
+        <div style={{ marginTop: 10, marginBottom: 10, textAlign: 'center' }}>
+          <div style={{ fontSize: 28, fontWeight: 'bold' }}>
+            Dine poeng: {myScore}
+          </div>
+          {(phase === 'playing' || phase === 'buzzed') && (
+            <div style={{ marginTop: 6, fontSize: 18 }}>
+              Poeng nå: {winScore}{" "}
+              {winScore === 4 && "(deretter 2 → 1)"}
+              {winScore === 2 && "(deretter 1)"}
+              {winScore === 1 && "(siste sjanse)"}
+            </div>
+          )}
+        </div>
+      )}
+
+      {result && (
+        <div
+          className={`banner ${result.correct ? 'ok' : 'err'}`}
+          style={{
+            marginTop: 8,
+            padding: 12,
+            borderRadius: 10,
+            textAlign: 'center',
+            fontSize: 20,
+            fontWeight: 'bold',
+            background: result.correct ? '#4caf50' : '#e53935',
+            color: 'white',
+          }}
+        >
+          {result.correct
+            ? `🎉 Riktig! Du fikk +${result.points} poeng`
+            : `❌ Feil! Du mistet ${Math.abs(result.points)} poeng`}
         </div>
       )}
 
@@ -228,8 +258,6 @@ export default function Player() {
                   </button>
                 </div>
               )}
-
-              <small className="muted">Bare “Send svar” (eller Enter) leverer – klikking utenfor gjør ingenting.</small>
             </div>
           )}
         </>
