@@ -104,7 +104,7 @@ export default function Player() {
 
   async function join() {
     if (!uid) return
-    await set(ref(db, `rooms/${room}/players/${uid}`), {
+    await update(ref(db, `rooms/${room}/players/${uid}`), {
       name,
       score: 0,
       lastSeen: Date.now(),
