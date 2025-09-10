@@ -1,0 +1,17 @@
+EDPN / 421-Quiz — React (ikke Vue) patch — 2025-09-10
+
+Feil på Netlify:
+- "Error: Cannot find module './App.vue'": Bygget prøver å laste en Vue-komponent.
+  Prosjektet ditt er React/TS, ikke Vue.
+
+Løsning:
+1) Vite med React-plugin (vite.config.ts)
+2) Inngangspunkt: src/main.tsx (ikke App.vue)
+3) index.html peker til /src/main.tsx og har <div id="root"></div>
+4) Netlify SPA-redirect (netlify.toml)
+
+Etterpå:
+- npm i -D @vitejs/plugin-react
+- npm remove @vitejs/plugin-vue vue (hvis de finnes)
+- npm i react react-dom react-router-dom
+- Netlify: Clear build cache + redeploy
