@@ -168,13 +168,12 @@ export default function Player() {
       {connecting && <div><small className="muted">Kobler til…</small></div>}
 
       {joined && (
-        <div style={{ marginTop: 10, marginBottom: 10, textAlign: 'center' }}>
-          <div style={{ fontSize: 28, fontWeight: 'bold' }}>
-            Dine poeng: {myScore}
-          </div>
+        <div className="score-display">
+          <div className="score-number">{myScore}</div>
+          <div className="score-label">Dine poeng</div>
           {(phase === 'playing' || phase === 'buzzed') && (
-            <div style={{ marginTop: 6, fontSize: 18 }}>
-              Poeng nå: {winScore}{" "}
+            <div style={{ marginTop: 12, fontSize: 16, color: 'var(--accent)' }}>
+              🎯 Poeng nå: {winScore}{" "}
               {winScore === 4 && "(deretter 2 → 1)"}
               {winScore === 2 && "(deretter 1)"}
               {winScore === 1 && "(siste sjanse)"}
@@ -185,7 +184,7 @@ export default function Player() {
 
       {result && (
         <div
-          className={`banner ${result.correct ? 'ok' : 'err'}`}
+          className={`banner ${result.correct ? 'ok result-correct' : 'err result-wrong'}`}
           style={{
             marginTop: 8,
             padding: 12,
@@ -193,7 +192,6 @@ export default function Player() {
             textAlign: 'center',
             fontSize: 20,
             fontWeight: 'bold',
-            background: result.correct ? '#4caf50' : '#e53935',
             color: 'white',
           }}
         >
@@ -214,7 +212,7 @@ export default function Player() {
             value={name}
             onChange={(e)=>setName(e.target.value)}
           />
-          <div className="hstack" style={{ marginTop: 12 }}>
+          <div className="btn-row" style={{ marginTop: 12 }}>
             <button onClick={join} disabled={!name.trim() || !uid}>Join</button>
           </div>
         </>
@@ -224,16 +222,16 @@ export default function Player() {
             <button onClick={leave}>Forlat</button>
           </div>
 
-          <div className="vstack" style={{ gap: 6 }}>
+          <div className="vstack" style={{ gap: 12 }}>
             <strong>Buzzer</strong>
             <button
               onClick={buzz}
               disabled={phase !== 'playing' || !!buzzOwner || buzzing}
               aria-label="Buzz / Stopp"
               className="buzzer-primary"
-              style={{ fontSize: 28, padding: '22px 30px', borderRadius: 18 }}
+              style={{ position: 'relative' }}
             >
-              STOPP
+              🚨 STOPP
             </button>
             <small className="muted">
               {phase === 'playing' && !buzzOwner && 'Trykk når du kan artisten'}
@@ -252,19 +250,19 @@ export default function Player() {
                 placeholder="Artist…"
                 onKeyDown={(e)=>{ if(e.key==='Enter' && answerText.trim()) requestSubmit() }}
               />
-              <div className="hstack" style={{ gap: 8, marginTop: 6 }}>
+              <div className="btn-row" style={{ marginTop: 12 }}>
                 <button onClick={requestSubmit} disabled={!answerText.trim()}>
-                  Send svar
+                  📝 Send svar
                 </button>
               </div>
 
               {confirmPending && (
-                <div className="hstack" style={{ gap: 8, marginTop: 8 }}>
+                <div className="btn-row" style={{ marginTop: 16 }}>
                   <button className="primary" onClick={confirmSubmit} title="Send inn svaret">
-                    Er du sikker? Send inn
+                    ✅ Er du sikker? Send inn
                   </button>
                   <button className="ghost" onClick={cancelSubmit} title="Gå tilbake og rediger">
-                    Avbryt
+                    ❌ Avbryt
                   </button>
                 </div>
               )}

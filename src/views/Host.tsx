@@ -347,13 +347,15 @@ export default function Host() {
         </div>
         {copyMsg && <small className="badge">{copyMsg}</small>}
         {showQR && (
-          <div className="vstack" style={{ marginTop: 8, alignItems: 'flex-start' }}>
-            <img
-              width={180}
-              height={180}
-              alt="QR-kode for spiller-lenke"
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(playerUrl)}`}
-            />
+          <div className="vstack" style={{ marginTop: 16, alignItems: 'flex-start' }}>
+            <div className="qr-container">
+              <img
+                width={180}
+                height={180}
+                alt="QR-kode for spiller-lenke"
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(playerUrl)}`}
+              />
+            </div>
             <small className="muted">Spillere kan skanne for å bli med.</small>
           </div>
         )}
@@ -391,8 +393,8 @@ export default function Host() {
         <strong>Lydtest</strong>
         <div className="hstack" style={{ gap: 8, flexWrap: 'wrap' }}>
           <button className="primary" onClick={initPlayer}>Start nettleser-spiller</button>
-          <button className="ghost" onClick={playTest}>Spill testsang</button>
-          <button className="ghost" onClick={pauseTest}>Pause</button>
+          <button className="ghost" onClick={playTest}>🎵 Spill testsang</button>
+          <button className="ghost" onClick={pauseTest}>⏸ Pause</button>
         </div>
         <small className="badge">{status}</small>
       </div>
@@ -404,7 +406,7 @@ export default function Host() {
 
         <div className="hstack" style={{ gap: 8, flexWrap: 'wrap' }}>
           <button className="primary" onClick={loadPlaylistsFirst} disabled={loadingPl}>
-            {loadingPl ? 'Henter…' : 'Hent spillelister'}
+            {loadingPl ? '⏳ Henter…' : '🎵 Hent spillelister'}
           </button>
           <input
             placeholder="Søk navn/eier…"
@@ -413,7 +415,7 @@ export default function Host() {
             style={{ minWidth: 200 }}
           />
           <span className="badge">
-            {filtered.length}/{playlists.length} vist • {selected.size} valgt
+            📊 {filtered.length}/{playlists.length} vist • ✅ {selected.size} valgt
           </span>
         </div>
 
@@ -474,7 +476,7 @@ export default function Host() {
                 disabled={building || selected.size === 0}
                 title={selected.size === 0 ? 'Velg minst én liste' : ''}
               >
-                {building ? 'Bygger runde…' : `Bygg runde (${QUESTIONS})`}
+                {building ? '⚙️ Bygger runde…' : `🎯 Bygg runde (${QUESTIONS})`}
               </button>
             </div>
 
@@ -482,7 +484,7 @@ export default function Host() {
 
             {built && (
               <div className="vstack" style={{ marginTop: 8 }}>
-                <strong>Runde klar – {built.length} spørsmål</strong>
+                <strong>🎉 Runde klar – {built.length} spørsmål</strong>
 
                 {!showFasit ? (
                   <div
@@ -532,9 +534,9 @@ export default function Host() {
 
                 <div className="hstack" style={{ gap: 8 }}>
                   <button className="ghost" onClick={revealFasit3s} title="Vis fasit kort (3 s)">
-                    Fasit (3 s)
+                    👁 Fasit (3 s)
                   </button>
-                  <button className="primary" onClick={goToGame}>Send til spill</button>
+                  <button className="primary" onClick={goToGame}>🚀 Send til spill</button>
                 </div>
               </div>
             )}

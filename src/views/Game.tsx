@@ -253,8 +253,8 @@ export default function Game() {
       <div className="vstack" style={{ marginBottom: 8 }}>
         <div className="hstack" style={{ gap: 8, flexWrap: 'wrap' }}>
           <button onClick={initWebPlayer}>Aktiver nettleser-spiller</button>
-          <button onClick={transferHere}>Overfør avspilling hit</button>
-          <button onClick={refreshDevices}>Sjekk enheter</button>
+            <button onClick={transferHere}>🔄 Overfør avspilling hit</button>
+            <button onClick={refreshDevices}>📱 Sjekk enheter</button>
           <span className="badge">{playerStatus}</span>
         </div>
         {playError && <small className="badge" style={{ color: '#b00020' }}>{playError}</small>}
@@ -269,61 +269,61 @@ export default function Game() {
         <>
           <div className="hstack" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <div>Rom: <span className="badge">{room}</span></div>
-              <div>Spørsmål: <span className="badge">{roomState.idx + 1}/{round.questions.length}</span></div>
+              <div>🏠 Rom: <span className="badge">{room}</span></div>
+              <div>❓ Spørsmål: <span className="badge">{roomState.idx + 1}/{round.questions.length}</span></div>
             </div>
             <div className="hstack" style={{ gap: 8, flexWrap: 'wrap' }}>
               {roomState.phase === 'idle' ? (
-                <button onClick={() => startQuestion(0)} title={!deviceId ? 'Aktiver først' : ''}>Start runde (spm #1)</button>
+                <button onClick={() => startQuestion(0)} title={!deviceId ? 'Aktiver først' : ''}>🎬 Start runde (spm #1)</button>
               ) : (
                 <>
-                  <button onClick={nextQuestion}>Neste spørsmål</button>
-                  <button onClick={() => revealFasit(true)}>Fasit (3 s)</button>
-                  <button onClick={resetToFirst} title="Tilbake til første spørsmål">Start på nytt (til #1)</button>
+                  <button onClick={nextQuestion}>⏭ Neste spørsmål</button>
+                  <button onClick={() => revealFasit(true)}>💡 Fasit (3 s)</button>
+                  <button onClick={resetToFirst} title="Tilbake til første spørsmål">🔄 Start på nytt (til #1)</button>
                 </>
               )}
             </div>
           </div>
 
           <div className="btn-row" style={{ marginTop: 8 }}>
-            <button className="ghost" onClick={() => nav("/")}>Til Lobby</button>
+            <button className="ghost" onClick={() => nav("/")}>🏠 Til Lobby</button>
           </div>
 
           <hr />
 
           {/* Status */}
           <div className="hstack sticky-top" style={{ gap: 12, flexWrap: 'wrap' }}>
-            <span className="badge">Fase: {roomState.phase}</span>
+            <span className="badge">🎮 Fase: {roomState.phase}</span>
             {(roomState.phase !== 'idle' && roomState.phase !== 'ended') && (
               <>
-                <span className="badge">Tid: {tSec}s</span>
-                <span className="badge">Poeng nå: {roomState.phase === 'buzzed' && typeof lockedInfo === 'number' ? lockedInfo : winScore} (deretter 2 → 1)</span>
+                <span className="badge">⏰ Tid: {tSec}s</span>
+                <span className="badge">🎯 Poeng nå: {roomState.phase === 'buzzed' && typeof lockedInfo === 'number' ? lockedInfo : winScore} (deretter 2 → 1)</span>
                 {typeof lockedInfo === 'number' && buzz && (
-                  <span className="badge">Låst poeng ({buzz.name}): {lockedInfo} (→ 2 → 1)</span>
+                  <span className="badge">🔒 Låst poeng ({buzz.name}): {lockedInfo} (→ 2 → 1)</span>
                 )}
-                {roomState.wrongAtAny && <span className="badge">Første feil registrert</span>}
+                {roomState.wrongAtAny && <span className="badge">❌ Første feil registrert</span>}
               </>
             )}
-            {buzz && <span className="badge">Buzz: {buzz.name}</span>}
+            {buzz && <span className="badge pulse">🚨 Buzz: {buzz.name}</span>}
           </div>
 
           {/* Fasit */}
           {roomState.phase === 'reveal' && q && (
-            <div className="vstack" style={{ marginTop: 12, border: '1px dashed #ddd', borderRadius: 12, padding: 10, background: '#fafafa' }}>
-              <strong>FASIT</strong>
+            <div className="banner ok" style={{ marginTop: 12 }}>
+              <strong>💡 FASIT</strong>
               <small className="muted">{q.artistNames.join(', ')} — {q.name}</small>
             </div>
           )}
 
           {/* Scoreboard */}
           <div className="vstack scoreboard" style={{ marginTop: 8 }}>
-            <strong>Score</strong>
-            <div className="vstack" style={{ border: '1px solid #eee', borderRadius: 12, padding: 8, maxHeight: 220, overflow: 'auto' }}>
+            <strong>🏆 Scoreboard</strong>
+            <div className="scoreboard" style={{ maxHeight: 220, overflow: 'auto' }}>
               {activePlayers.length === 0 && (<small className="muted">Ingen spillere enda – be folk åpne /player og joine.</small>)}
               {activePlayers.map(([pid, p]) => (
-                <div key={pid} className="hstack" style={{ justifyContent: 'space-between' }}>
-                  <div>{p.name}</div>
-                  <div style={{ fontWeight: 600 }}>{p.score ?? 0}</div>
+                <div key={pid} className="scoreboard-row">
+                  <div className="score-name">{p.name}</div>
+                  <div className="score-points">{p.score ?? 0}</div>
                 </div>
               ))}
             </div>
@@ -331,10 +331,10 @@ export default function Game() {
 
           {roomState.phase === 'ended' && (
             <div className="vstack" style={{ marginTop: 16 }}>
-              <strong>Ferdig 🎉</strong>
+              <strong>🎉 Spillet er ferdig!</strong>
               <div className="hstack" style={{ gap: 8 }}>
-                <button onClick={resetToFirst}>Start på nytt (til #1)</button>
-                <button onClick={() => nav('/host')}>Tilbake til Vert</button>
+                <button onClick={resetToFirst}>🔄 Start på nytt (til #1)</button>
+                <button onClick={() => nav('/host')}>🏠 Tilbake til Vert</button>
               </div>
             </div>
           )}
