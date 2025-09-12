@@ -105,7 +105,7 @@ export default function Host() {
   async function playTest() {
     try {
       if (!deviceId) {
-        setStatus('Ingen enhet – trykk “Start nettleser-spiller” først')
+        setStatus('Ingen enhet – trykk "Start nettleser-spiller" først')
         return
       }
       setStatus('Spiller testsang…')
@@ -405,8 +405,9 @@ export default function Host() {
         <strong>Spilleliste-velger</strong>
 
         <div className="hstack" style={{ gap: 8, flexWrap: 'wrap' }}>
-          <button className="primary" onClick={loadPlaylistsFirst} disabled={loadingPl}>
-            {loadingPl ? '⏳ Henter…' : '🎵 Hent spillelister'}
+          <button className="primary" onClick={loadPlaylistsFirst} disabled={loadingPl} style={{ position: 'relative' }}>
+            {loadingPl && <span className="spinner"></span>}
+            {loadingPl ? 'Henter spillelister…' : '🎵 Hent spillelister'}
           </button>
           <input
             placeholder="Søk navn/eier…"
@@ -414,7 +415,7 @@ export default function Host() {
             onChange={(e) => setQ(e.target.value)}
             style={{ minWidth: 200 }}
           />
-          <span className="badge">
+          <span className="badge" style={{ fontSize: '14px', padding: '8px 12px' }}>
             📊 {filtered.length}/{playlists.length} vist • ✅ {selected.size} valgt
           </span>
         </div>
@@ -432,7 +433,8 @@ export default function Host() {
               style={{
                 maxHeight: 360,
                 overflow: 'auto',
-                border: '1px solid #eee',
+                border: '1px solid var(--border)',
+                background: 'rgba(255, 255, 255, 0.02)',
                 borderRadius: 12,
                 padding: 8,
               }}
@@ -441,7 +443,11 @@ export default function Host() {
                 <label
                   key={pl.id}
                   className="hstack"
-                  style={{ justifyContent: 'space-between', padding: '6px 4px' }}
+                  style={{ 
+                    justifyContent: 'space-between', 
+                    padding: '8px 6px',
+                    cursor: 'pointer'
+                  }}
                 >
                   <div className="hstack" style={{ gap: 8 }}>
                     <input
@@ -450,9 +456,9 @@ export default function Host() {
                       onChange={() => toggleSelect(pl.id)}
                     />
                     <div>
-                      <div style={{ fontWeight: 600 }}>{pl.name}</div>
-                      <small style={{ color: '#666' }}>
-                        {pl.tracksTotal} spor • {pl.owner || 'ukjent eier'}
+                      <div style={{ fontWeight: 600, fontSize: '15px' }}>{pl.name}</div>
+                      <small style={{ color: 'var(--muted)', fontSize: '13px' }}>
+                        🎵 {pl.tracksTotal} spor • 👤 {pl.owner || 'ukjent eier'}
                       </small>
                     </div>
                   </div>
@@ -462,7 +468,10 @@ export default function Host() {
 
             <div className="hstack" style={{ gap: 8, marginTop: 8 }}>
               <button
-                className="ghost"
+                className={nextUrl ? "ghost" : "ghost"}
+                style={{ 
+                  opacity: nextUrl ? 1 : 0.5
+                }}
                 onClick={loadMore}
                 disabled={loadingPl || !nextUrl}
                 title={nextUrl ? '' : 'Ingen flere'}
@@ -472,39 +481,65 @@ export default function Host() {
 
               <button
                 className="primary"
+                style={{ 
+                  position: 'relative'
+                }}
                 onClick={buildRound}
                 disabled={building || selected.size === 0}
                 title={selected.size === 0 ? 'Velg minst én liste' : ''}
               >
+                {building && <span className="spinner"></span>}
                 {building ? '⚙️ Bygger runde…' : `🎯 Bygg runde (${QUESTIONS})`}
               </button>
             </div>
 
-            {buildMsg && <small className="badge">{buildMsg}</small>}
+            {buildMsg && (
+              <div className="banner" style={{ 
+                marginTop: 12,
+                fontSize: '14px',
+                textAlign: 'center'
+              }}>
+                {buildMsg}
+              </div>
+            )}
 
             {built && (
-              <div className="vstack" style={{ marginTop: 8 }}>
-                <strong>🎉 Runde klar – {built.length} spørsmål</strong>
+              <div className="vstack" style={{ marginTop: 16 }}>
+                <div style={{ 
+                  textAlign: 'center', 
+                  fontSize: '20px', 
+                  fontWeight: 'bold',
+                  marginBottom: '16px',
+                  color: 'var(--ok)'
+                }}>
+                  🎉 Runde klar – {built.length} spørsmål
+                </div>
 
                 {!showFasit ? (
                   <div
                     className="vstack"
                     style={{
-                      maxHeight: 260,
+                      maxHeight: 300,
                       overflow: 'auto',
-                      border: '1px dashed #ddd',
+                      border: '1px dashed var(--border)',
                       borderRadius: 12,
-                      padding: 8,
-                      background: '#fafafa',
+                      padding: 12,
+                      background: 'rgba(255, 255, 255, 0.02)',
                     }}
                   >
                     {built.map((_, i) => (
-                      <div key={i} className="hstack" style={{ justifyContent: 'space-between' }}>
+                      <div key={i} className="hstack" style={{ 
+                        justifyContent: 'space-between',
+                        padding: '8px 0',
+                        borderBottom: i < built.length - 1 ? '1px solid var(--border)' : 'none'
+                      }}>
                         <div>
-                          <span className="badge" style={{ marginRight: 8 }}>{i + 1}</span>
-                          <span style={{ opacity: 0.65 }}>Skjult tittel/artist</span>
+                          <span className="badge" style={{ marginRight: 12, minWidth: '32px', textAlign: 'center' }}>
+                            {i + 1}
+                          </span>
+                          <span style={{ opacity: 0.7, fontStyle: 'italic' }}>🎵 Skjult spørsmål</span>
                         </div>
-                        <small className="muted">?</small>
+                        <small className="muted">❓</small>
                       </div>
                     ))}
                   </div>
@@ -512,31 +547,51 @@ export default function Host() {
                   <div
                     className="vstack"
                     style={{
-                      maxHeight: 260,
+                      maxHeight: 300,
                       overflow: 'auto',
-                      border: '1px dashed #ddd',
+                      border: '1px dashed var(--ok)',
                       borderRadius: 12,
-                      padding: 8,
+                      padding: 12,
+                      background: 'var(--ok-weak)',
                     }}
                   >
                     {built.map((t, i) => (
-                      <div key={t.id} className="hstack" style={{ justifyContent: 'space-between' }}>
+                      <div key={t.id} className="hstack" style={{ 
+                        justifyContent: 'space-between',
+                        padding: '8px 0',
+                        borderBottom: i < built.length - 1 ? '1px solid var(--border)' : 'none'
+                      }}>
                         <div>
-                          <span className="badge" style={{ marginRight: 8 }}>{i + 1}</span>
-                          <strong>{t.name}</strong>
-                          <small style={{ marginLeft: 6, color: '#666' }}>— {t.artistNames.join(', ')}</small>
+                          <span className="badge" style={{ marginRight: 12, minWidth: '32px', textAlign: 'center' }}>
+                            {i + 1}
+                          </span>
+                          <strong style={{ fontSize: '15px' }}>{t.name}</strong>
+                          <div style={{ marginLeft: 44, fontSize: '13px', color: 'var(--muted)' }}>
+                            👤 {t.artistNames.join(', ')}
+                          </div>
                         </div>
-                        <small className="muted">{Math.round((t.duration_ms || 0) / 1000)} s</small>
+                        <small className="muted">⏱️ {Math.round((t.duration_ms || 0) / 1000)}s</small>
                       </div>
                     ))}
                   </div>
                 )}
 
-                <div className="hstack" style={{ gap: 8 }}>
-                  <button className="ghost" onClick={revealFasit3s} title="Vis fasit kort (3 s)">
+                <div className="hstack" style={{ gap: 12, marginTop: 16 }}>
+                  <button 
+                    className="ghost" 
+                    onClick={revealFasit3s} 
+                    title="Vis fasit kort (3 s)"
+                    style={{ fontSize: '14px' }}
+                  >
                     👁 Fasit (3 s)
                   </button>
-                  <button className="primary" onClick={goToGame}>🚀 Send til spill</button>
+                  <button 
+                    className="primary" 
+                    onClick={goToGame}
+                    style={{ fontSize: '16px', padding: '16px 24px' }}
+                  >
+                    🚀 Start spillet!
+                  </button>
                 </div>
               </div>
             )}
