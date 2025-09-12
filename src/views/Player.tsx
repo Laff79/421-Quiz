@@ -169,14 +169,36 @@ export default function Player() {
 
       {joined && (
         <div className="score-display">
-          <div className="score-number">{myScore}</div>
+          <div className="score-number" style={{ 
+            background: myScore > 0 
+              ? 'linear-gradient(135deg, var(--ok) 0%, var(--blue) 100%)'
+              : myScore < 0 
+                ? 'linear-gradient(135deg, var(--err) 0%, var(--warning) 100%)'
+                : 'linear-gradient(135deg, var(--muted) 0%, var(--fg) 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text'
+          }}>
+            {myScore}
+          </div>
           <div className="score-label">Dine poeng</div>
           {(phase === 'playing' || phase === 'buzzed') && (
-            <div style={{ marginTop: 12, fontSize: 16, color: 'var(--accent)' }}>
-              🎯 Poeng nå: {winScore}{" "}
-              {winScore === 4 && "(deretter 2 → 1)"}
-              {winScore === 2 && "(deretter 1)"}
-              {winScore === 1 && "(siste sjanse)"}
+            <div style={{ 
+              marginTop: 16, 
+              fontSize: 18, 
+              fontWeight: 'bold',
+              color: 'var(--accent)',
+              padding: '12px 20px',
+              background: 'var(--accent-weak)',
+              borderRadius: '16px',
+              border: '1px solid var(--accent)'
+            }}>
+              🎯 Poeng nå: <span style={{ fontSize: '22px' }}>{winScore}</span>
+              <div style={{ fontSize: '14px', marginTop: '4px', opacity: 0.8 }}>
+                {winScore === 4 && "Perfekt timing! (deretter 2 → 1)"}
+                {winScore === 2 && "Bra timing! (deretter 1)"}
+                {winScore === 1 && "Siste sjanse!"}
+              </div>
             </div>
           )}
         </div>
@@ -186,18 +208,22 @@ export default function Player() {
         <div
           className={`banner ${result.correct ? 'ok result-correct' : 'err result-wrong'}`}
           style={{
-            marginTop: 8,
-            padding: 12,
-            borderRadius: 10,
+            marginTop: 16,
+            padding: 20,
+            borderRadius: 16,
             textAlign: 'center',
-            fontSize: 20,
+            fontSize: 22,
             fontWeight: 'bold',
             color: 'white',
+            background: result.correct 
+              ? 'linear-gradient(135deg, var(--ok) 0%, var(--blue) 100%)'
+              : 'linear-gradient(135deg, var(--err) 0%, var(--warning) 100%)',
+            boxShadow: result.correct ? 'var(--glow)' : '0 0 20px rgba(255, 165, 2, 0.4)'
           }}
         >
           {result.correct
-            ? `🎉 Riktig! Du fikk +${result.points} poeng`
-            : `❌ Feil! Du mistet ${Math.abs(result.points)} poeng`}
+            ? `🎉 Perfekt! +${result.points} poeng`
+            : `💥 Feil svar! -${Math.abs(result.points)} poeng`}
         </div>
       )}
 
@@ -219,51 +245,106 @@ export default function Player() {
       ) : (
         <>
           <div className="hstack" style={{ gap: 8 }}>
-            <button onClick={leave}>Forlat</button>
+            <button 
+              className="ghost" 
+              onClick={leave}
+              style={{ fontSize: '14px', padding: '12px 16px' }}
+            >
+              👋 Forlat spill
+            </button>
           </div>
 
-          <div className="vstack" style={{ gap: 12 }}>
-            <strong>Buzzer</strong>
+          <div className="vstack" style={{ gap: 16, marginTop: 16 }}>
+            <h3 style={{ textAlign: 'center', margin: 0 }}>Buzzer</h3>
             <button
               onClick={buzz}
               disabled={phase !== 'playing' || !!buzzOwner || buzzing}
               aria-label="Buzz / Stopp"
               className="buzzer-primary"
-              style={{ position: 'relative' }}
+              style={{ 
+                position: 'relative',
+                opacity: (phase !== 'playing' || !!buzzOwner) ? 0.5 : 1,
+                cursor: (phase !== 'playing' || !!buzzOwner) ? 'not-allowed' : 'pointer'
+              }}
             >
-              🚨 STOPP
+              {buzzing ? '⏳ BUZZER...' : '🚨 STOPP'}
             </button>
-            <small className="muted">
-              {phase === 'playing' && !buzzOwner && 'Trykk når du kan artisten'}
-              {phase === 'playing' && buzzOwner && `Buzz: ${buzzOwner.name}`}
-              {phase === 'buzzed' && (iAmBuzzer ? 'Skriv inn og send svaret ditt' : 'Venter på svar')}
-              {phase === 'reveal' && 'Fasit vises…'}
-            </small>
+            <div style={{ 
+              textAlign: 'center', 
+              fontSize: '16px',
+              padding: '12px',
+              background: 'rgba(255, 255, 255, 0.05)',
+              borderRadius: '12px',
+              border: '1px solid var(--border)'
+            }}>
+              {phase === 'playing' && !buzzOwner && '🎵 Trykk når du kan artisten!'}
+              {phase === 'playing' && buzzOwner && `🚨 ${buzzOwner.name} buzzet først`}
+              {phase === 'buzzed' && (iAmBuzzer ? '✍️ Skriv inn svaret ditt' : '⏳ Venter på svar...')}
+              {phase === 'reveal' && '💡 Fasit vises...'}
+              {phase === 'idle' && '⏸️ Venter på neste spørsmål'}
+              {phase === 'ended' && '🏁 Spillet er ferdig!'}
+            </div>
           </div>
 
           {iAmBuzzer && phase === 'buzzed' && (
-            <div className="vstack" style={{ marginTop: 8 }}>
-              <label>Skriv artistnavn</label>
+            <div className="vstack" style={{ 
+              marginTop: 20, 
+              padding: '20px',
+              background: 'var(--accent-weak)',
+              borderRadius: '16px',
+              border: '2px solid var(--accent)'
+            }}>
+              <label style={{ 
+                fontSize: '16px', 
+                fontWeight: 'bold',
+                color: 'var(--accent)',
+                textAlign: 'center'
+              }}>
+                ✍️ Skriv artistnavn
+              </label>
               <input
+                autoFocus
                 value={answerText}
                 onChange={(e)=>setAnswerText(e.target.value)}
                 placeholder="Artist…"
                 onKeyDown={(e)=>{ if(e.key==='Enter' && answerText.trim()) requestSubmit() }}
+                style={{ 
+                  fontSize: '18px',
+                  padding: '16px',
+                  textAlign: 'center',
+                  fontWeight: 'bold'
+                }}
               />
-              <div className="btn-row" style={{ marginTop: 12 }}>
-                <button onClick={requestSubmit} disabled={!answerText.trim()}>
+              <div className="btn-row" style={{ marginTop: 16 }}>
+                <button 
+                  className="primary"
+                  onClick={requestSubmit} 
+                  disabled={!answerText.trim()}
+                  style={{ fontSize: '16px', padding: '16px 24px' }}
+                >
                   📝 Send svar
                 </button>
               </div>
 
               {confirmPending && (
-                <div className="btn-row" style={{ marginTop: 16 }}>
-                  <button className="primary" onClick={confirmSubmit} title="Send inn svaret">
+                <div className="vstack" style={{ 
+                  marginTop: 20,
+                  padding: '16px',
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  borderRadius: '12px',
+                  gap: '12px'
+                }}>
+                  <div style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '16px' }}>
+                    Er du sikker på svaret: "{answerText}"?
+                  </div>
+                  <div className="btn-row">
+                    <button className="primary" onClick={confirmSubmit} title="Send inn svaret">
                     ✅ Er du sikker? Send inn
                   </button>
                   <button className="ghost" onClick={cancelSubmit} title="Gå tilbake og rediger">
                     ❌ Avbryt
                   </button>
+                  </div>
                 </div>
               )}
             </div>

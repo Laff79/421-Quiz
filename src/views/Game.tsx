@@ -292,38 +292,99 @@ export default function Game() {
           <hr />
 
           {/* Status */}
-          <div className="hstack sticky-top" style={{ gap: 12, flexWrap: 'wrap' }}>
-            <span className="badge">🎮 Fase: {roomState.phase}</span>
+          <div className="hstack sticky-top" style={{ gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+            <div className={`phase-indicator ${roomState.phase}`}>
+              {roomState.phase === 'idle' && '⏸️ Venter'}
+              {roomState.phase === 'playing' && '🎵 Spiller'}
+              {roomState.phase === 'buzzed' && '🚨 Buzzet'}
+              {roomState.phase === 'reveal' && '💡 Fasit'}
+              {roomState.phase === 'ended' && '🏁 Ferdig'}
+            </div>
             {(roomState.phase !== 'idle' && roomState.phase !== 'ended') && (
               <>
-                <span className="badge">⏰ Tid: {tSec}s</span>
-                <span className="badge">🎯 Poeng nå: {roomState.phase === 'buzzed' && typeof lockedInfo === 'number' ? lockedInfo : winScore} (deretter 2 → 1)</span>
+                <span className="badge" style={{ fontSize: '16px', padding: '10px 16px' }}>
+                  ⏰ {tSec}s
+                </span>
+                <span className="badge" style={{ 
+                  fontSize: '16px', 
+                  padding: '10px 16px',
+                  background: 'var(--accent-weak)',
+                  borderColor: 'var(--accent)',
+                  color: 'var(--accent)'
+                }}>
+                  🎯 {roomState.phase === 'buzzed' && typeof lockedInfo === 'number' ? lockedInfo : winScore} poeng
+                </span>
                 {typeof lockedInfo === 'number' && buzz && (
-                  <span className="badge">🔒 Låst poeng ({buzz.name}): {lockedInfo} (→ 2 → 1)</span>
+                  <span className="badge pulse" style={{ 
+                    background: 'var(--warning-weak)',
+                    borderColor: 'var(--warning)',
+                    color: 'var(--warning)'
+                  }}>
+                    🔒 {buzz.name}: {lockedInfo}p
+                  </span>
                 )}
-                {roomState.wrongAtAny && <span className="badge">❌ Første feil registrert</span>}
+                {roomState.wrongAtAny && (
+                  <span className="badge" style={{ 
+                    background: 'var(--err-weak)',
+                    borderColor: 'var(--err)',
+                    color: 'var(--err)'
+                  }}>
+                    ❌ Første feil
+                  </span>
+                )}
               </>
             )}
-            {buzz && <span className="badge pulse">🚨 Buzz: {buzz.name}</span>}
+            {buzz && (
+              <span className="badge pulse" style={{ 
+                background: 'var(--accent-weak)',
+                borderColor: 'var(--accent)',
+                color: 'var(--accent)',
+                fontSize: '16px',
+                padding: '10px 16px',
+                fontWeight: 'bold'
+              }}>
+                🚨 {buzz.name}
+              </span>
+            )}
           </div>
 
           {/* Fasit */}
           {roomState.phase === 'reveal' && q && (
-            <div className="banner ok" style={{ marginTop: 12 }}>
-              <strong>💡 FASIT</strong>
-              <small className="muted">{q.artistNames.join(', ')} — {q.name}</small>
+            <div className="banner ok" style={{ 
+              marginTop: 16, 
+              padding: '24px',
+              textAlign: 'center',
+              fontSize: '18px'
+            }}>
+              <div style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '8px' }}>
+                💡 FASIT
+              </div>
+              <div style={{ fontSize: '20px', color: 'var(--ok)' }}>
+                {q.artistNames.join(', ')} — {q.name}
+              </div>
             </div>
           )}
 
           {/* Scoreboard */}
-          <div className="vstack scoreboard" style={{ marginTop: 8 }}>
-            <strong>🏆 Scoreboard</strong>
-            <div className="scoreboard" style={{ maxHeight: 220, overflow: 'auto' }}>
+          <div className="vstack" style={{ marginTop: 20 }}>
+            <h3 style={{ margin: '0 0 16px 0', textAlign: 'center' }}>🏆 Scoreboard</h3>
+            <div className="scoreboard" style={{ maxHeight: 280, overflow: 'auto' }}>
               {activePlayers.length === 0 && (<small className="muted">Ingen spillere enda – be folk åpne /player og joine.</small>)}
-              {activePlayers.map(([pid, p]) => (
+              {activePlayers
+                .sort(([,a], [,b]) => (b.score || 0) - (a.score || 0))
+                .map(([pid, p], index) => (
                 <div key={pid} className="scoreboard-row">
-                  <div className="score-name">{p.name}</div>
-                  <div className="score-points">{p.score ?? 0}</div>
+                  <div className="hstack" style={{ gap: '12px' }}>
+                    <span style={{ 
+                      fontSize: '18px',
+                      minWidth: '24px',
+                      textAlign: 'center'
+                    }}>
+                      {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}
+                    </span>
+                    <div className="score-name" style={{ fontSize: '16px' }}>{p.name}</div>
+                  </div>
+                  <div className="score-points" style={{ fontSize: '18px' }}>{p.score ?? 0}</div>
                 </div>
               ))}
             </div>
@@ -331,7 +392,12 @@ export default function Game() {
 
           {roomState.phase === 'ended' && (
             <div className="vstack" style={{ marginTop: 16 }}>
-              <strong>🎉 Spillet er ferdig!</strong>
+              <div style={{ 
+                textAlign: 'center', 
+                fontSize: '24px', 
+                fontWeight: 'bold',
+                marginBottom: '16px'
+              }}>🎉 Spillet er ferdig!</div>
               <div className="hstack" style={{ gap: 8 }}>
                 <button onClick={resetToFirst}>🔄 Start på nytt (til #1)</button>
                 <button onClick={() => nav('/host')}>🏠 Tilbake til Vert</button>
