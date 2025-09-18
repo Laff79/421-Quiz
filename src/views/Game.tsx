@@ -247,52 +247,84 @@ export default function Game() {
 
   return (
     <div className="card vstack">
-      <h2>Spillvisning</h2>
+      <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+        <h2 style={{ fontSize: '2.5rem', marginBottom: '8px' }}>🎮 Spillvisning</h2>
+        <p style={{ color: 'var(--music-pink)', fontSize: '1.1rem', margin: 0, fontWeight: '600' }}>
+          Kontrollpanel for verten
+        </p>
+      </div>
 
       {/* Kontroller */}
-      <div className="vstack" style={{ marginBottom: 8 }}>
-        <div className="hstack" style={{ gap: 8, flexWrap: 'wrap' }}>
+      <div className="vstack" style={{ marginBottom: 16 }}>
+        <h3 style={{ fontSize: '1.4rem', margin: '0 0 12px 0' }}>🎵 Spotify Kontroller</h3>
+        <div className="hstack" style={{ gap: 12, flexWrap: 'wrap' }}>
           <button onClick={initWebPlayer}>Aktiver nettleser-spiller</button>
             <button onClick={transferHere}>🔄 Overfør avspilling hit</button>
             <button onClick={refreshDevices}>📱 Sjekk enheter</button>
-          <span className="badge">{playerStatus}</span>
+          <span className="badge" style={{ fontSize: '14px', padding: '10px 16px' }}>{playerStatus}</span>
         </div>
-        {playError && <small className="badge" style={{ color: '#b00020' }}>{playError}</small>}
+        {playError && (
+          <div className="banner err" style={{ fontSize: '14px', padding: '16px' }}>
+            {playError}
+          </div>
+        )}
       </div>
 
       {!round ? (
-        <p>
-          Ingen runde funnet. Gå til{' '}
-          <a href="/" onClick={(e) => { e.preventDefault(); nav('/host') }}>Vert</a>{' '}og bygg en runde.
-        </p>
+        <div className="banner" style={{ textAlign: 'center', padding: '32px' }}>
+          <h3 style={{ margin: '0 0 16px 0', color: 'var(--warning)' }}>⚠️ Ingen runde funnet</h3>
+          <p style={{ margin: '0 0 20px 0', fontSize: '16px' }}>
+            Du må først bygge en runde med spillelister og spørsmål.
+          </p>
+          <button 
+            className="primary" 
+            onClick={() => nav('/host')}
+            style={{ fontSize: '16px', padding: '16px 32px' }}
+          >
+            🎤 Gå til Vertspanel
+          </button>
+        </div>
       ) : (
         <>
-          <div className="hstack" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <div>🏠 Rom: <span className="badge">{room}</span></div>
-              <div>❓ Spørsmål: <span className="badge">{roomState.idx + 1}/{round.questions.length}</span></div>
+          <div className="hstack" style={{ justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
+            <div className="vstack" style={{ gap: '8px' }}>
+              <div style={{ fontSize: '16px' }}>
+                🏠 Rom: <span className="badge" style={{ fontSize: '15px', padding: '8px 16px' }}>{room}</span>
+              </div>
+              <div style={{ fontSize: '16px' }}>
+                ❓ Spørsmål: <span className="badge" style={{ fontSize: '15px', padding: '8px 16px', background: 'var(--accent-weak)', borderColor: 'var(--accent)', color: 'var(--accent)' }}>
+                  {roomState.idx + 1}/{round.questions.length}
+                </span>
+              </div>
             </div>
-            <div className="hstack" style={{ gap: 8, flexWrap: 'wrap' }}>
+            <div className="hstack" style={{ gap: 12, flexWrap: 'wrap' }}>
               {roomState.phase === 'idle' ? (
-                <button onClick={() => startQuestion(0)} title={!deviceId ? 'Aktiver først' : ''}>🎬 Start runde (spm #1)</button>
+                <button 
+                  className="primary"
+                  onClick={() => startQuestion(0)} 
+                  title={!deviceId ? 'Aktiver nettleser-spiller først' : ''}
+                  style={{ fontSize: '16px', padding: '16px 24px' }}
+                >
+                  🎬 Start runde (spm #1)
+                </button>
               ) : (
                 <>
-                  <button onClick={nextQuestion}>⏭ Neste spørsmål</button>
-                  <button onClick={() => revealFasit(true)}>💡 Fasit (3 s)</button>
-                  <button onClick={resetToFirst} title="Tilbake til første spørsmål">🔄 Start på nytt (til #1)</button>
+                  <button className="primary" onClick={nextQuestion}>⏭ Neste spørsmål</button>
+                  <button className="ghost" onClick={() => revealFasit(true)}>💡 Vis fasit (3s)</button>
+                  <button className="ghost" onClick={resetToFirst} title="Tilbake til første spørsmål">🔄 Start på nytt</button>
                 </>
               )}
             </div>
           </div>
 
-          <div className="btn-row" style={{ marginTop: 8 }}>
+          <div className="btn-row" style={{ marginTop: 16 }}>
             <button className="ghost" onClick={() => nav("/")}>🏠 Til Lobby</button>
           </div>
 
           <hr />
 
           {/* Status */}
-          <div className="hstack sticky-top" style={{ gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+          <div className="hstack sticky-top" style={{ gap: 20, flexWrap: 'wrap', alignItems: 'center', padding: '24px 0' }}>
             <div className={`phase-indicator ${roomState.phase}`}>
               {roomState.phase === 'idle' && '⏸️ Venter'}
               {roomState.phase === 'playing' && '🎵 Spiller'}
@@ -303,7 +335,7 @@ export default function Game() {
             {(roomState.phase !== 'idle' && roomState.phase !== 'ended') && (
               <>
                 <span className="badge" style={{ fontSize: '16px', padding: '10px 16px' }}>
-                  ⏰ {tSec}s
+                  ⏰ {tSec} sekunder
                 </span>
                 <span className="badge" style={{ 
                   fontSize: '16px', 
@@ -351,56 +383,92 @@ export default function Game() {
           {/* Fasit */}
           {roomState.phase === 'reveal' && q && (
             <div className="banner ok" style={{ 
-              marginTop: 16, 
-              padding: '24px',
+              marginTop: 20, 
+              padding: '32px',
               textAlign: 'center',
-              fontSize: '18px'
+              fontSize: '20px',
+              boxShadow: '0 0 40px rgba(46, 213, 115, 0.4)'
             }}>
-              <div style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '8px' }}>
-                💡 FASIT
+              <div style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '12px', color: 'white' }}>
+                💡 RIKTIG SVAR
               </div>
-              <div style={{ fontSize: '20px', color: 'var(--ok)' }}>
-                {q.artistNames.join(', ')} — {q.name}
+              <div style={{ 
+                fontSize: '24px', 
+                color: 'white',
+                fontWeight: 'bold',
+                background: 'rgba(255, 255, 255, 0.1)',
+                padding: '16px 24px',
+                borderRadius: '16px',
+                margin: '16px 0'
+              }}>
+                🎤 {q.artistNames.join(', ')}<br/>
+                <span style={{ fontSize: '20px', opacity: 0.9 }}>🎵 "{q.name}"</span>
               </div>
             </div>
           )}
 
           {/* Scoreboard */}
-          <div className="vstack" style={{ marginTop: 20 }}>
-            <h3 style={{ margin: '0 0 16px 0', textAlign: 'center' }}>🏆 Scoreboard</h3>
-            <div className="scoreboard" style={{ maxHeight: 280, overflow: 'auto' }}>
-              {activePlayers.length === 0 && (<small className="muted">Ingen spillere enda – be folk åpne /player og joine.</small>)}
+          <div className="vstack" style={{ marginTop: 24 }}>
+            <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+              <h3 style={{ margin: '0 0 8px 0', fontSize: '2rem' }}>🏆 Scoreboard</h3>
+              <p style={{ margin: 0, color: 'var(--muted)', fontSize: '14px' }}>
+                {activePlayers.length} aktive spillere
+              </p>
+            </div>
+            <div className="scoreboard" style={{ maxHeight: 320, overflow: 'auto' }}>
+              {activePlayers.length === 0 && (
+                <div style={{ 
+                  padding: '40px 20px', 
+                  textAlign: 'center',
+                  color: 'var(--muted)',
+                  fontSize: '16px'
+                }}>
+                  <div style={{ fontSize: '48px', marginBottom: '16px' }}>🎮</div>
+                  <div>Ingen spillere enda</div>
+                  <div style={{ fontSize: '14px', marginTop: '8px' }}>
+                    Be folk åpne /player og bli med!
+                  </div>
+                </div>
+              )}
               {activePlayers
                 .sort(([,a], [,b]) => (b.score || 0) - (a.score || 0))
                 .map(([pid, p], index) => (
                 <div key={pid} className="scoreboard-row">
-                  <div className="hstack" style={{ gap: '12px' }}>
+                  <div className="hstack" style={{ gap: '16px' }}>
                     <span style={{ 
-                      fontSize: '18px',
-                      minWidth: '24px',
+                      fontSize: '20px',
+                      minWidth: '32px',
                       textAlign: 'center'
                     }}>
                       {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}
                     </span>
-                    <div className="score-name" style={{ fontSize: '16px' }}>{p.name}</div>
+                    <div className="score-name" style={{ fontSize: '18px', fontWeight: '600' }}>{p.name}</div>
                   </div>
-                  <div className="score-points" style={{ fontSize: '18px' }}>{p.score ?? 0}</div>
+                  <div className="score-points" style={{ fontSize: '20px' }}>{p.score ?? 0}</div>
                 </div>
               ))}
             </div>
           </div>
 
           {roomState.phase === 'ended' && (
-            <div className="vstack" style={{ marginTop: 16 }}>
+            <div className="vstack" style={{ marginTop: 24 }}>
               <div style={{ 
                 textAlign: 'center', 
-                fontSize: '24px', 
+                fontSize: '28px', 
                 fontWeight: 'bold',
-                marginBottom: '16px'
-              }}>🎉 Spillet er ferdig!</div>
-              <div className="hstack" style={{ gap: 8 }}>
-                <button onClick={resetToFirst}>🔄 Start på nytt (til #1)</button>
-                <button onClick={() => nav('/host')}>🏠 Tilbake til Vert</button>
+                marginBottom: '20px',
+                color: 'var(--music-pink)'
+              }}>
+                🎉 Spillet er ferdig! 🎉
+              </div>
+              <div className="banner" style={{ textAlign: 'center', marginBottom: '20px' }}>
+                <p style={{ margin: 0, fontSize: '18px' }}>
+                  Takk for en fantastisk musikkquiz! 🎵
+                </p>
+              </div>
+              <div className="hstack" style={{ gap: 16, justifyContent: 'center' }}>
+                <button className="primary" onClick={resetToFirst}>🔄 Spill igjen</button>
+                <button className="ghost" onClick={() => nav('/host')}>🏠 Nytt spill</button>
               </div>
             </div>
           )}

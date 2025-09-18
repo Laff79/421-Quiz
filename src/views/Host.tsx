@@ -325,19 +325,23 @@ export default function Host() {
 
   return (
     <div className="card vstack">
-      <h2>Vertspanel</h2>
-      <div>Rom: <span className="badge">{room}</span></div>
+      <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+        <h2 style={{ fontSize: '2.5rem', marginBottom: '8px' }}>🎤 Vertspanel</h2>
+        <div style={{ fontSize: '1.1rem', color: 'var(--music-pink)', fontWeight: '600' }}>
+          🏠 Rom: <span className="badge" style={{ fontSize: '16px', padding: '12px 20px' }}>{room}</span>
+        </div>
+      </div>
 
       {/* Inviter spillere */}
       <hr />
       <div className="vstack">
-        <strong>Inviter spillere</strong>
-        <div className="hstack" style={{ gap: 8, flexWrap: 'wrap' }}>
+        <h3 style={{ fontSize: '1.6rem', margin: '0 0 16px 0' }}>👥 Inviter spillere</h3>
+        <div className="hstack" style={{ gap: 12, flexWrap: 'wrap' }}>
           <input
             readOnly
             value={playerUrl}
             onFocus={(e) => e.currentTarget.select()}
-            style={{ minWidth: 280 }}
+            style={{ minWidth: 320, fontSize: '14px' }}
           />
           <button className="primary" onClick={copyLink}>Kopier lenke</button>
           <button className="ghost" onClick={shareLink}>Del…</button>
@@ -345,18 +349,20 @@ export default function Host() {
             {showQR ? 'Skjul QR' : 'Vis QR'}
           </button>
         </div>
-        {copyMsg && <small className="badge">{copyMsg}</small>}
+        {copyMsg && <div className="badge success" style={{ alignSelf: 'flex-start' }}>{copyMsg}</div>}
         {showQR && (
-          <div className="vstack" style={{ marginTop: 16, alignItems: 'flex-start' }}>
+          <div className="vstack" style={{ marginTop: 20, alignItems: 'center' }}>
             <div className="qr-container">
               <img
-                width={180}
-                height={180}
+                width={200}
+                height={200}
                 alt="QR-kode for spiller-lenke"
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(playerUrl)}`}
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(playerUrl)}`}
               />
             </div>
-            <small className="muted">Spillere kan skanne for å bli med.</small>
+            <p style={{ margin: '16px 0 0 0', textAlign: 'center', color: 'var(--muted)' }}>
+              📱 Spillere kan skanne QR-koden for å bli med raskt!
+            </p>
           </div>
         )}
       </div>
@@ -364,13 +370,13 @@ export default function Host() {
       {/* Verts-spiller */}
       <hr />
       <div className="vstack">
-        <strong>Verts-spiller</strong>
-        <div className="hstack" style={{ gap: 8, flexWrap: 'wrap' }}>
+        <h3 style={{ fontSize: '1.6rem', margin: '0 0 16px 0' }}>🎮 Verts-spiller</h3>
+        <div className="hstack" style={{ gap: 12, flexWrap: 'wrap' }}>
           <input
             value={hostName}
             onChange={(e) => setHostName(e.target.value)}
             placeholder="Ditt spillernavn"
-            style={{ minWidth: 200 }}
+            style={{ minWidth: 240, fontSize: '16px' }}
           />
           <button
             className="primary"
@@ -384,27 +390,31 @@ export default function Host() {
             Bli med som spiller (ny fane)
           </button>
         </div>
-        <small className="badge">Tips: åpne denne på mobilen din hvis du vil buzze der.</small>
+        <div className="banner" style={{ fontSize: '14px', padding: '16px' }}>
+          💡 <strong>Tips:</strong> Åpne spiller-lenken på mobilen din for å kunne buzze derfra!
+        </div>
       </div>
 
       {/* Lydtest */}
       <hr />
       <div className="vstack">
-        <strong>Lydtest</strong>
-        <div className="hstack" style={{ gap: 8, flexWrap: 'wrap' }}>
+        <h3 style={{ fontSize: '1.6rem', margin: '0 0 16px 0' }}>🔊 Lydtest</h3>
+        <div className="hstack" style={{ gap: 12, flexWrap: 'wrap' }}>
           <button className="primary" onClick={initPlayer}>Start nettleser-spiller</button>
           <button className="ghost" onClick={playTest}>🎵 Spill testsang</button>
           <button className="ghost" onClick={pauseTest}>⏸ Pause</button>
         </div>
-        <small className="badge">{status}</small>
+        <div className="badge" style={{ alignSelf: 'flex-start', fontSize: '14px', padding: '10px 16px' }}>
+          {status}
+        </div>
       </div>
 
       {/* Spilleliste-velger */}
       <hr />
       <div className="vstack">
-        <strong>Spilleliste-velger</strong>
+        <h3 style={{ fontSize: '1.6rem', margin: '0 0 16px 0' }}>🎵 Spilleliste-velger</h3>
 
-        <div className="hstack" style={{ gap: 8, flexWrap: 'wrap' }}>
+        <div className="hstack" style={{ gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
           <button className="primary" onClick={loadPlaylistsFirst} disabled={loadingPl} style={{ position: 'relative' }}>
             {loadingPl && <span className="spinner"></span>}
             {loadingPl ? 'Henter spillelister…' : '🎵 Hent spillelister'}
@@ -413,17 +423,17 @@ export default function Host() {
             placeholder="Søk navn/eier…"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            style={{ minWidth: 200 }}
+            style={{ minWidth: 240 }}
           />
-          <span className="badge" style={{ fontSize: '14px', padding: '8px 12px' }}>
+          <span className="badge" style={{ fontSize: '14px', padding: '10px 16px' }}>
             📊 {filtered.length}/{playlists.length} vist • ✅ {selected.size} valgt
           </span>
         </div>
 
         {plError && (
-          <small className="badge" style={{ color: '#b00020' }}>
+          <div className="banner err" style={{ fontSize: '14px', padding: '16px' }}>
             {plError}
-          </small>
+          </div>
         )}
 
         {playlists.length > 0 && (
@@ -431,12 +441,12 @@ export default function Host() {
             <div
               className="vstack"
               style={{
-                maxHeight: 360,
+                maxHeight: 400,
                 overflow: 'auto',
-                border: '1px solid var(--border)',
-                background: 'rgba(255, 255, 255, 0.02)',
-                borderRadius: 12,
-                padding: 8,
+                border: '2px solid var(--border)',
+                background: 'rgba(255, 255, 255, 0.05)',
+                borderRadius: 16,
+                padding: 12,
               }}
             >
               {filtered.map((pl) => (
@@ -445,28 +455,33 @@ export default function Host() {
                   className="hstack"
                   style={{ 
                     justifyContent: 'space-between', 
-                    padding: '8px 6px',
-                    cursor: 'pointer'
+                    padding: '12px 8px',
+                    cursor: 'pointer',
+                    borderRadius: '8px',
+                    transition: 'background 0.2s ease'
                   }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                 >
-                  <div className="hstack" style={{ gap: 8 }}>
+                  <div className="hstack" style={{ gap: 12 }}>
                     <input
                       type="checkbox"
                       checked={selected.has(pl.id)}
                       onChange={() => toggleSelect(pl.id)}
+                      style={{ transform: 'scale(1.2)' }}
                     />
                     <div>
-                      <div style={{ fontWeight: 600, fontSize: '15px' }}>{pl.name}</div>
-                      <small style={{ color: 'var(--muted)', fontSize: '13px' }}>
+                      <div style={{ fontWeight: 600, fontSize: '16px', marginBottom: '4px' }}>{pl.name}</div>
+                      <div style={{ color: 'var(--muted)', fontSize: '13px' }}>
                         🎵 {pl.tracksTotal} spor • 👤 {pl.owner || 'ukjent eier'}
-                      </small>
+                      </div>
                     </div>
                   </div>
                 </label>
               ))}
             </div>
 
-            <div className="hstack" style={{ gap: 8, marginTop: 8 }}>
+            <div className="hstack" style={{ gap: 12, marginTop: 16 }}>
               <button
                 className={nextUrl ? "ghost" : "ghost"}
                 style={{ 
@@ -495,9 +510,10 @@ export default function Host() {
 
             {buildMsg && (
               <div className="banner" style={{ 
-                marginTop: 12,
-                fontSize: '14px',
-                textAlign: 'center'
+                marginTop: 16,
+                fontSize: '15px',
+                textAlign: 'center',
+                fontWeight: '600'
               }}>
                 {buildMsg}
               </div>
@@ -507,10 +523,11 @@ export default function Host() {
               <div className="vstack" style={{ marginTop: 16 }}>
                 <div style={{ 
                   textAlign: 'center', 
-                  fontSize: '20px', 
+                  fontSize: '24px', 
                   fontWeight: 'bold',
-                  marginBottom: '16px',
-                  color: 'var(--ok)'
+                  marginBottom: '20px',
+                  color: 'var(--ok)',
+                  textShadow: '0 0 20px rgba(46, 213, 115, 0.5)'
                 }}>
                   🎉 Runde klar – {built.length} spørsmål
                 </div>
@@ -519,27 +536,35 @@ export default function Host() {
                   <div
                     className="vstack"
                     style={{
-                      maxHeight: 300,
+                      maxHeight: 320,
                       overflow: 'auto',
-                      border: '1px dashed var(--border)',
-                      borderRadius: 12,
-                      padding: 12,
-                      background: 'rgba(255, 255, 255, 0.02)',
+                      border: '2px dashed var(--border)',
+                      borderRadius: 16,
+                      padding: 16,
+                      background: 'rgba(255, 255, 255, 0.03)',
                     }}
                   >
                     {built.map((_, i) => (
                       <div key={i} className="hstack" style={{ 
                         justifyContent: 'space-between',
-                        padding: '8px 0',
+                        padding: '12px 0',
                         borderBottom: i < built.length - 1 ? '1px solid var(--border)' : 'none'
                       }}>
                         <div>
-                          <span className="badge" style={{ marginRight: 12, minWidth: '32px', textAlign: 'center' }}>
+                          <span className="badge" style={{ 
+                            marginRight: 16, 
+                            minWidth: '36px', 
+                            textAlign: 'center',
+                            fontSize: '14px',
+                            fontWeight: 'bold'
+                          }}>
                             {i + 1}
                           </span>
-                          <span style={{ opacity: 0.7, fontStyle: 'italic' }}>🎵 Skjult spørsmål</span>
+                          <span style={{ opacity: 0.7, fontStyle: 'italic', fontSize: '15px' }}>
+                            🎵 Skjult spørsmål
+                          </span>
                         </div>
-                        <small className="muted">❓</small>
+                        <span className="muted" style={{ fontSize: '18px' }}>❓</span>
                       </div>
                     ))}
                   </div>
@@ -547,48 +572,61 @@ export default function Host() {
                   <div
                     className="vstack"
                     style={{
-                      maxHeight: 300,
+                      maxHeight: 320,
                       overflow: 'auto',
-                      border: '1px dashed var(--ok)',
-                      borderRadius: 12,
-                      padding: 12,
+                      border: '2px dashed var(--ok)',
+                      borderRadius: 16,
+                      padding: 16,
                       background: 'var(--ok-weak)',
+                      boxShadow: '0 0 20px rgba(46, 213, 115, 0.2)'
                     }}
                   >
                     {built.map((t, i) => (
                       <div key={t.id} className="hstack" style={{ 
                         justifyContent: 'space-between',
-                        padding: '8px 0',
+                        padding: '12px 0',
                         borderBottom: i < built.length - 1 ? '1px solid var(--border)' : 'none'
                       }}>
                         <div>
-                          <span className="badge" style={{ marginRight: 12, minWidth: '32px', textAlign: 'center' }}>
+                          <span className="badge" style={{ 
+                            marginRight: 16, 
+                            minWidth: '36px', 
+                            textAlign: 'center',
+                            fontSize: '14px',
+                            fontWeight: 'bold'
+                          }}>
                             {i + 1}
                           </span>
-                          <strong style={{ fontSize: '15px' }}>{t.name}</strong>
-                          <div style={{ marginLeft: 44, fontSize: '13px', color: 'var(--muted)' }}>
+                          <strong style={{ fontSize: '16px' }}>{t.name}</strong>
+                          <div style={{ marginLeft: 52, fontSize: '14px', color: 'var(--muted)', marginTop: '4px' }}>
                             👤 {t.artistNames.join(', ')}
                           </div>
                         </div>
-                        <small className="muted">⏱️ {Math.round((t.duration_ms || 0) / 1000)}s</small>
+                        <span className="muted" style={{ fontSize: '13px' }}>
+                          ⏱️ {Math.round((t.duration_ms || 0) / 1000)}s
+                        </span>
                       </div>
                     ))}
                   </div>
                 )}
 
-                <div className="hstack" style={{ gap: 12, marginTop: 16 }}>
+                <div className="hstack" style={{ gap: 16, marginTop: 20, justifyContent: 'center' }}>
                   <button 
                     className="ghost" 
                     onClick={revealFasit3s} 
                     title="Vis fasit kort (3 s)"
-                    style={{ fontSize: '14px' }}
+                    style={{ fontSize: '14px', padding: '12px 20px' }}
                   >
                     👁 Fasit (3 s)
                   </button>
                   <button 
                     className="primary" 
                     onClick={goToGame}
-                    style={{ fontSize: '16px', padding: '16px 24px' }}
+                    style={{ 
+                      fontSize: '18px', 
+                      padding: '18px 32px',
+                      minWidth: '200px'
+                    }}
                   >
                     🚀 Start spillet!
                   </button>

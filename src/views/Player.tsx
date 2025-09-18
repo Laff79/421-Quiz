@@ -162,8 +162,10 @@ export default function Player() {
 
   return (
     <div className="card vstack">
-      <h2>Spiller</h2>
-      <div>Rom: <span className="badge">{room}</span></div>
+      <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+        <h2 style={{ marginBottom: '8px' }}>🎮 Spiller</h2>
+        <div>🏠 Rom: <span className="badge" style={{ fontSize: '16px', padding: '12px 20px' }}>{room}</span></div>
+      </div>
 
       {connecting && <div><small className="muted">Kobler til…</small></div>}
 
@@ -208,22 +210,26 @@ export default function Player() {
         <div
           className={`banner ${result.correct ? 'ok result-correct' : 'err result-wrong'}`}
           style={{
-            marginTop: 16,
-            padding: 20,
-            borderRadius: 16,
+            marginTop: 20,
+            padding: 24,
+            borderRadius: 20,
             textAlign: 'center',
-            fontSize: 22,
+            fontSize: 24,
             fontWeight: 'bold',
             color: 'white',
             background: result.correct 
               ? 'linear-gradient(135deg, var(--ok) 0%, var(--blue) 100%)'
               : 'linear-gradient(135deg, var(--err) 0%, var(--warning) 100%)',
-            boxShadow: result.correct ? 'var(--glow)' : '0 0 20px rgba(255, 165, 2, 0.4)'
+            boxShadow: result.correct 
+              ? '0 0 40px rgba(46, 213, 115, 0.6)' 
+              : '0 0 40px rgba(255, 165, 2, 0.6)',
+            border: '2px solid',
+            borderColor: result.correct ? 'var(--ok)' : 'var(--warning)'
           }}
         >
           {result.correct
-            ? `🎉 Perfekt! +${result.points} poeng`
-            : `💥 Feil svar! -${Math.abs(result.points)} poeng`}
+            ? `🎉 PERFEKT! +${result.points} poeng`
+            : `💥 FEIL SVAR! -${Math.abs(result.points)} poeng`}
         </div>
       )}
 
@@ -255,7 +261,12 @@ export default function Player() {
           </div>
 
           <div className="vstack" style={{ gap: 16, marginTop: 16 }}>
-            <h3 style={{ textAlign: 'center', margin: 0 }}>Buzzer</h3>
+            <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+              <h3 style={{ margin: 0, fontSize: '1.8rem' }}>🚨 Buzzer Zone</h3>
+              <p style={{ margin: '8px 0 0 0', color: 'var(--muted)', fontSize: '14px' }}>
+                Trykk når du kjenner artisten!
+              </p>
+            </div>
             <button
               onClick={buzz}
               disabled={phase !== 'playing' || !!buzzOwner || buzzing}
@@ -269,81 +280,110 @@ export default function Player() {
             >
               {buzzing ? '⏳ BUZZER...' : '🚨 STOPP'}
             </button>
-            <div style={{ 
+            
+            <div className="banner" style={{ 
               textAlign: 'center', 
-              fontSize: '16px',
-              padding: '12px',
-              background: 'rgba(255, 255, 255, 0.05)',
-              borderRadius: '12px',
-              border: '1px solid var(--border)'
+              fontSize: '17px',
+              fontWeight: '600',
+              padding: '16px 20px'
             }}>
-              {phase === 'playing' && !buzzOwner && '🎵 Trykk når du kan artisten!'}
-              {phase === 'playing' && buzzOwner && `🚨 ${buzzOwner.name} buzzet først`}
-              {phase === 'buzzed' && (iAmBuzzer ? '✍️ Skriv inn svaret ditt' : '⏳ Venter på svar...')}
-              {phase === 'reveal' && '💡 Fasit vises...'}
-              {phase === 'idle' && '⏸️ Venter på neste spørsmål'}
-              {phase === 'ended' && '🏁 Spillet er ferdig!'}
+              {phase === 'playing' && !buzzOwner && '🎵 Musikk spiller - buzz når du kjenner artisten!'}
+              {phase === 'playing' && buzzOwner && `🚨 ${buzzOwner.name} buzzet først!`}
+              {phase === 'buzzed' && (iAmBuzzer ? '✍️ Din tur - skriv inn svaret!' : '⏳ Venter på svar...')}
+              {phase === 'reveal' && '💡 Fasit vises på hovedskjermen...'}
+              {phase === 'idle' && '⏸️ Venter på at verten starter neste spørsmål'}
+              {phase === 'ended' && '🏁 Spillet er ferdig! Takk for at du spilte! 🎉'}
             </div>
           </div>
 
           {iAmBuzzer && phase === 'buzzed' && (
             <div className="vstack" style={{ 
-              marginTop: 20, 
-              padding: '20px',
+              marginTop: 24, 
+              padding: '24px',
               background: 'var(--accent-weak)',
-              borderRadius: '16px',
-              border: '2px solid var(--accent)'
+              borderRadius: '20px',
+              border: '2px solid var(--accent)',
+              boxShadow: '0 0 30px rgba(255, 71, 87, 0.3)'
             }}>
-              <label style={{ 
-                fontSize: '16px', 
+              <div style={{ 
+                fontSize: '18px', 
                 fontWeight: 'bold',
                 color: 'var(--accent)',
-                textAlign: 'center'
+                textAlign: 'center',
+                marginBottom: '16px'
               }}>
-                ✍️ Skriv artistnavn
-              </label>
+                ✍️ Skriv inn artistnavnet
+              </div>
               <input
                 autoFocus
                 value={answerText}
                 onChange={(e)=>setAnswerText(e.target.value)}
-                placeholder="Artist…"
+                placeholder="F.eks: Michael Jackson, Beatles..."
                 onKeyDown={(e)=>{ if(e.key==='Enter' && answerText.trim()) requestSubmit() }}
                 style={{ 
-                  fontSize: '18px',
-                  padding: '16px',
+                  fontSize: '20px',
+                  padding: '18px 24px',
                   textAlign: 'center',
-                  fontWeight: 'bold'
+                  fontWeight: 'bold',
+                  background: 'rgba(255, 255, 255, 0.9)',
+                  color: '#333',
+                  border: '2px solid var(--accent)'
                 }}
               />
-              <div className="btn-row" style={{ marginTop: 16 }}>
+              <div className="btn-row" style={{ marginTop: 20, justifyContent: 'center' }}>
                 <button 
                   className="primary"
                   onClick={requestSubmit} 
                   disabled={!answerText.trim()}
-                  style={{ fontSize: '16px', padding: '16px 24px' }}
+                  style={{ 
+                    fontSize: '18px', 
+                    padding: '18px 32px',
+                    minWidth: '200px'
+                  }}
                 >
-                  📝 Send svar
+                  📝 Send inn svar
                 </button>
               </div>
 
               {confirmPending && (
                 <div className="vstack" style={{ 
-                  marginTop: 20,
-                  padding: '16px',
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  borderRadius: '12px',
-                  gap: '12px'
+                  marginTop: 24,
+                  padding: '20px',
+                  background: 'rgba(255, 255, 255, 0.15)',
+                  borderRadius: '16px',
+                  gap: '16px',
+                  border: '2px solid rgba(255, 255, 255, 0.2)'
                 }}>
-                  <div style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '16px' }}>
-                    Er du sikker på svaret: "{answerText}"?
+                  <div style={{ 
+                    textAlign: 'center', 
+                    fontWeight: 'bold', 
+                    fontSize: '18px',
+                    color: 'white'
+                  }}>
+                    🤔 Er du sikker på svaret:<br/>
+                    <span style={{ 
+                      color: 'var(--music-cyan)', 
+                      fontSize: '20px',
+                      textDecoration: 'underline'
+                    }}>
+                      "{answerText}"
+                    </span>
                   </div>
                   <div className="btn-row">
-                    <button className="primary" onClick={confirmSubmit} title="Send inn svaret">
-                    ✅ Er du sikker? Send inn
-                  </button>
-                  <button className="ghost" onClick={cancelSubmit} title="Gå tilbake og rediger">
-                    ❌ Avbryt
-                  </button>
+                    <button 
+                      className="primary" 
+                      onClick={confirmSubmit} 
+                      style={{ fontSize: '16px', padding: '16px 24px' }}
+                    >
+                      ✅ Ja, send inn!
+                    </button>
+                    <button 
+                      className="ghost" 
+                      onClick={cancelSubmit}
+                      style={{ fontSize: '16px', padding: '16px 24px' }}
+                    >
+                      ❌ Nei, endre
+                    </button>
                   </div>
                 </div>
               )}
