@@ -140,7 +140,9 @@ export default function Game() {
     await SpotifyAPI.pause().catch(() => {})
     const until = nowMs() + 3000
     await update(ref(db, `rooms/${room}/state`), { phase: 'reveal', revealUntil: until })
-    setTimeout(() => { void nextQuestion() }, 3000)
+    if (_skipped) {
+      setTimeout(() => { void nextQuestion() }, 3000)
+    }
   }
 
   async function nextQuestion() {
@@ -278,7 +280,7 @@ export default function Game() {
                 <button onClick={() => startQuestion(0)} title={!deviceId ? 'Aktiver først' : ''}>🎬 Start runde (spm #1)</button>
               ) : (
                 <>
-                  <button onClick={() => revealFasit(false)}>👀 Vis fasit</button>
+                  <button onClick={() => revealFasit(false)}>👀 Vis fasit (3s)</button>
                   <button onClick={() => {
                     const ph = roomState && roomState.phase;
                     if (ph === 'playing' || ph === 'buzzed') {
