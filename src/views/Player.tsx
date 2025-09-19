@@ -90,8 +90,8 @@ export default function Player() {
     if (pRef) {
       unsub4 = onValue(pRef, (snap) => { setMyScore(snap.val() || 0) })
     }
-// --- compact layout control (fits on one screen) ---
-return () => { off(sRef); off(bRef); off(rRef); if (pRef) off(pRef); unsub1(); unsub2(); unsub3(); unsub4() }
+
+    return () => { off(sRef); off(bRef); off(rRef); if (pRef) off(pRef); unsub1(); unsub2(); unsub3(); unsub4() }
   }, [room, uid])
 
   // Oppdater tick hvert sekund når vi spiller → winScore oppdateres live
@@ -160,7 +160,7 @@ return () => { off(sRef); off(bRef); off(rRef); if (pRef) off(pRef); unsub1(); u
     await set(aRef, { playerId: uid, text: answerText, at: Date.now() })
   }
 
-  // --- compact layout control (fits on one screen) ---
+  // Compact layout: detect small viewport height (avoid scroll)
   const [vh, setVh] = React.useState<number>(typeof window !== 'undefined' ? window.innerHeight : 900);
   React.useEffect(() => {
     const onResize = () => setVh(window.innerHeight);
@@ -169,24 +169,32 @@ return () => { off(sRef); off(bRef); off(rRef); if (pRef) off(pRef); unsub1(); u
   }, []);
   const compact = vh < 780;
 
-
   return (
     <div className="player-root card vstack" data-compact={compact ? "true" : "false"}>
-      {!compact && <h2>Spiller</h2>}
+      <h2>Spiller</h2>
       <div>Rom: <span className="badge">{room}</span></div>
 
       {connecting && <div><small className="muted">Kobler til…</small></div>}
 
       {joined && (
         <div className="score-display">
-          <div className="score-number" style={{ fontSize: compact ? "2.4rem" : "3.5rem" }}>
+          <div className="score-number" style={{ 
+            background: myScore > 0 
+              ? 'linear-gradient(135deg, var(--ok) 0%, var(--blue) 100%)'
+              : myScore < 0 
+                ? 'linear-gradient(135deg, var(--err) 0%, var(--warning) 100%)'
+                : 'linear-gradient(135deg, var(--muted) 0%, var(--fg) 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text'
+          }}>
             {myScore}
           </div>
           <div className="score-label">Dine poeng</div>
           {(phase === 'playing' || phase === 'buzzed') && (
             <div style={{ 
               marginTop: 16, 
-              fontSize: compact ? 14 : 18, 
+              fontSize: 18, 
               fontWeight: 'bold',
               color: 'var(--accent)',
               padding: '12px 20px',
@@ -194,8 +202,8 @@ return () => { off(sRef); off(bRef); off(rRef); if (pRef) off(pRef); unsub1(); u
               borderRadius: '16px',
               border: '1px solid var(--accent)'
             }}>
-              🎯 Poeng nå: <span style={{ fontSize: compact ? '18px' : '22px' }}>{winScore}</span>
-              <div style={{ fontSize: compact ? '12px' : '14px', marginTop: '4px', opacity: 0.8 }}>
+              🎯 Poeng nå: <span style={{ fontSize: '22px' }}>{winScore}</span>
+              <div style={{ fontSize: '14px', marginTop: '4px', opacity: 0.8 }}>
                 {winScore === 4 && "Perfekt timing! (deretter 2 → 1)"}
                 {winScore === 2 && "Bra timing! (deretter 1)"}
                 {winScore === 1 && "Siste sjanse!"}
@@ -231,13 +239,14 @@ return () => { off(sRef); off(bRef); off(rRef); if (pRef) off(pRef); unsub1(); u
       {!joined ? (
         <>
           <label>Spillernavn (unikt i rommet)</label>
-          <input
+          <input className="text-input" 
             autoFocus
             inputMode="text"
             enterKeyHint="send"
             autoComplete="off"
             value={name}
             onChange={(e)=>setName(e.target.value)}
+            style={{width:'100%',fontSize:compact?'16px':'18px',padding:compact?'10px 12px':'12px 14px',borderRadius:'16px',border:'1px solid var(--border)',background:'rgba(255,255,255,0.06)'}}
           />
           <div className="btn-row" style={{ marginTop: 12 }}>
             <button onClick={join} disabled={!name.trim() || !uid}>Join</button>
@@ -249,14 +258,14 @@ return () => { off(sRef); off(bRef); off(rRef); if (pRef) off(pRef); unsub1(); u
             <button 
               className="ghost" 
               onClick={leave}
-              style={{ fontSize: compact ? '12px' : '14px', padding: '12px 16px' }}
+              style={{ fontSize: '14px', padding: '12px 16px' }}
             >
               👋 Forlat spill
             </button>
           </div>
 
-          <div className="vstack" style={{ gap: compact ? 8 : 16, marginTop: compact ? 8 : 16 }}>
-            {!compact && <h3 style={{ textAlign: "center", margin: 0 }}>Buzzer</h3>}
+          <div className="vstack" style={{ gap: 16, marginTop: 16 }}>
+            <h3 style={{ textAlign: 'center', margin: 0 }}>Buzzer</h3>
             <button
               onClick={buzz}
               disabled={phase !== 'playing' || !!buzzOwner || buzzing}
@@ -272,8 +281,8 @@ return () => { off(sRef); off(bRef); off(rRef); if (pRef) off(pRef); unsub1(); u
             </button>
             <div style={{ 
               textAlign: 'center', 
-              fontSize: compact ? '13px' : '16px',
-              padding: compact ? '8px' : '12px',
+              fontSize: '16px',
+              padding: '12px',
               background: 'rgba(255, 255, 255, 0.05)',
               borderRadius: '12px',
               border: '1px solid var(--border)'
@@ -296,7 +305,7 @@ return () => { off(sRef); off(bRef); off(rRef); if (pRef) off(pRef); unsub1(); u
               border: '2px solid var(--accent)'
             }}>
               <label style={{ 
-                fontSize: compact ? '13px' : '16px', 
+                fontSize: '16px', 
                 fontWeight: 'bold',
                 color: 'var(--accent)',
                 textAlign: 'center'
@@ -321,7 +330,7 @@ return () => { off(sRef); off(bRef); off(rRef); if (pRef) off(pRef); unsub1(); u
                   className="primary"
                   onClick={requestSubmit} 
                   disabled={!answerText.trim()}
-                  style={{ fontSize: compact ? '13px' : '16px', padding: '16px 24px' }}
+                  style={{ fontSize: '16px', padding: '16px 24px' }}
                 >
                   📝 Send svar
                 </button>

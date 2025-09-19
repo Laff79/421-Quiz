@@ -6,6 +6,7 @@ import { ensureAnonAuth } from '../firebase/init'
 export default function App() {
   const nav = useNavigate()
   const location = useLocation()
+  const isPlayerRoute = location.pathname.includes('/player')
   const [isLoggedIn, setIsLoggedIn] = React.useState(false)
 
   function goToActiveGame(e?: React.MouseEvent) {
@@ -27,6 +28,7 @@ export default function App() {
 
   return (
     <div className="container">
+      {!isPlayerRoute && (
       <div
         className="hstack sticky-top"
         style={{ justifyContent: 'space-between', marginBottom: 12 }}
@@ -50,6 +52,7 @@ export default function App() {
           <span className="badge">Spotify innlogget ✔</span>
         )}
       </div>
+      )}
       <Outlet />
     </div>
   )

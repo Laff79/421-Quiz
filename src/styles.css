@@ -777,8 +777,7 @@ nav a.active {
   0%, 100% { border-color: var(--accent); box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.4); }
   50% { border-color: var(--accent-hover); box-shadow: 0 0 0 4px rgba(255, 71, 87, 0.2); }
 }
-
-/* Player root takes full visible height and avoids scroll on mobile */
+/* Player = full visible height + grid to avoid scroll */
 .player-root{
   min-height: 100svh;
   display: grid;
@@ -790,23 +789,12 @@ nav a.active {
   .player-root{ min-height: 100dvh; }
 }
 
-
-
-/* Compact player layout */
-.player-root[data-compact="true"] .score-display{
-  padding: 16px;
-  margin: 8px 0;
-  border-radius: 16px;
+/* Compact text input for join field */
+.text-input{
+  line-height: 1.2;
+  height: auto;
+  max-height: 56px;
 }
-.player-root[data-compact="true"] .score-display .score-number{
-  font-size: 2.4rem;
+.player-root[data-compact="true"] .text-input{
+  max-height: 48px;
 }
-.player-root[data-compact="true"] .buzzer-primary{
-  font-size: 1.6rem !important;
-  padding: 20px 24px !important;
-  border-radius: 16px !important;
-}
-.player-root[data-compact="true"] .badge{
-  font-size: 13px;
-}
-
