@@ -99,6 +99,15 @@ export default function Player() {
   }, []);
   const compact = vh < 780;
 
+  // --- compact layout control (fits on one screen) ---
+  const [vh, setVh] = React.useState<number>(typeof window !== 'undefined' ? window.innerHeight : 900);
+  React.useEffect(() => {
+    const onResize = () => setVh(window.innerHeight);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  const compact = vh < 780;
+
   return () => { off(sRef); off(bRef); off(rRef); if (pRef) off(pRef); unsub1(); unsub2(); unsub3(); unsub4() }
   }, [room, uid])
 
