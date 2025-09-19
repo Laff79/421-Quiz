@@ -408,6 +408,69 @@ export default function Game() {
                 fontWeight: 'bold',
                 marginBottom: '16px'
               }}>🎉 Spillet er ferdig!</div>
+              
+              {/* Spilleliste-oversikt */}
+              <div className="vstack" style={{ marginTop: 20 }}>
+                <h3 style={{ margin: '0 0 16px 0', textAlign: 'center' }}>🎵 Sanger i quizen</h3>
+                <div 
+                  className="vstack"
+                  style={{
+                    maxHeight: 400,
+                    overflow: 'auto',
+                    border: '1px solid var(--border)',
+                    borderRadius: 16,
+                    padding: 16,
+                    background: 'rgba(255, 255, 255, 0.02)',
+                    gap: 12
+                  }}
+                >
+                  {round.questions.map((q, i) => (
+                    <div 
+                      key={q.id} 
+                      className="hstack" 
+                      style={{ 
+                        justifyContent: 'space-between',
+                        padding: '12px 16px',
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        borderRadius: 12,
+                        border: '1px solid var(--border)'
+                      }}
+                    >
+                      <div className="vstack" style={{ gap: 4, flex: 1 }}>
+                        <div className="hstack" style={{ gap: 12 }}>
+                          <span className="badge" style={{ 
+                            minWidth: '32px', 
+                            textAlign: 'center',
+                            fontSize: '14px'
+                          }}>
+                            {i + 1}
+                          </span>
+                          <div>
+                            <div style={{ fontWeight: 'bold', fontSize: '16px' }}>
+                              {q.name}
+                            </div>
+                            <div style={{ 
+                              color: 'var(--muted)', 
+                              fontSize: '14px',
+                              marginTop: '2px'
+                            }}>
+                              👤 {q.artistNames.join(', ')}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ 
+                        fontSize: '12px', 
+                        color: 'var(--muted)',
+                        textAlign: 'right'
+                      }}>
+                        ⏱️ {Math.round((q.duration_ms || 0) / 1000)}s
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
               <div className="hstack" style={{ gap: 8 }}>
                 <button onClick={resetToFirst}>🔄 Start på nytt (til #1)</button>
                 <button onClick={() => nav('/host')}>🏠 Tilbake til Vert</button>
