@@ -84,6 +84,8 @@ export default function Player() {
       setWrongAtAny(!!v.wrongAtAny)
       if (typeof v.idx === 'number') setIdx(v.idx)
       if (typeof v.revealUntil === 'number') setRevealUntil(v.revealUntil); else setRevealUntil(null)
+      if (typeof v.idx === 'number') setIdx(v.idx)
+      if (typeof v.revealUntil === 'number') setRevealUntil(v.revealUntil); else setRevealUntil(null)
       if (v.phase !== 'buzzed') { setAnswerText(''); setConfirmPending(false) }
     })
     const unsub2 = onValue(bRef, (snap) => { setBuzzOwner(snap.val()) })
@@ -107,6 +109,8 @@ export default function Player() {
 
   const q = round?.questions?.[idx]
   const facit = q ? `${q.artistNames?.join(', ')} – ${q.name}` : ''
+  const now = Date.now()
+  const isRevealActive = phase === 'reveal' || (typeof revealUntil === 'number' && now < revealUntil)
 
   // Oppdater tick hvert sekund når vi spiller → winScore oppdateres live
   React.useEffect(() => {
@@ -287,7 +291,7 @@ return (
               {phase === 'playing' && !buzzOwner && '🎵 Trykk når du kan artisten!'}
               {phase === 'playing' && buzzOwner && `🚨 ${buzzOwner.name} buzzet først`}
               {phase === 'buzzed' && (iAmBuzzer ? '✍️ Skriv inn svaret ditt' : '⏳ Venter på svar...')}
-              {phase === 'reveal' && (
+              {(typeof isRevealActive !== 'undefined' ? isRevealActive : phase === 'reveal') && (
             <div className="card" style={{padding:16, textAlign:'center'}}>
               <div className="facit-title">Riktig svar</div>
               <div className="facit-answer">{facit || 'Fasit'}</div>

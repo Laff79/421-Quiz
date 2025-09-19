@@ -21,6 +21,17 @@ type Device = { id: string; name: string; is_active: boolean; type: string; volu
 const AUTO_SKIP_SECONDS = 90
 
 export default function Game() {
+function handleNext(){
+  if (roomState.phase === 'playing' || roomState.phase === 'buzzed') {
+    return revealFasit(true);
+  }
+  return nextQuestion();
+}
+const nextLabel =
+  (roomState.phase === 'playing' || roomState.phase === 'buzzed')
+    ? '👀 Vis fasit'
+    : '⏭ Neste spørsmål';
+
   const nav = useNavigate()
   const [round, setRound] = React.useState<RoundPayload | null>(null)
 
@@ -277,7 +288,7 @@ export default function Game() {
                 <button onClick={() => startQuestion(0)} title={!deviceId ? 'Aktiver først' : ''}>🎬 Start runde (spm #1)</button>
               ) : (
                 <>
-                  <button onClick={() => roomState.phase === 'playing' ? revealFasit(true) : nextQuestion()}>⏭ Neste spørsmål</button>
+                  <button onClick={handleNext}>{nextLabel}</button>
                   <button onClick={() => revealFasit(true)}>💡 Fasit (3 s)</button>
                   <button onClick={resetToFirst} title="Tilbake til første spørsmål">🔄 Start på nytt (til #1)</button>
                 </>
