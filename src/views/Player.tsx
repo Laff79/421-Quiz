@@ -7,6 +7,9 @@ import {
 } from 'firebase/database'
 import { currentScoreAt } from '../logic/score'
 
+type RoundQ = { id: string; name: string; artistNames: string[]; uri: string; duration_ms: number }
+type RoundPayload = { room: string; questions: RoundQ[] }
+
 type LastResult = {
   playerId: string
   name: string
@@ -29,6 +32,9 @@ export default function Player() {
 
   const [joined, setJoined] = React.useState(false)
   const [phase, setPhase] = React.useState<'idle'|'playing'|'buzzed'|'reveal'|'ended'>('idle')
+  const [idx, setIdx] = React.useState<number>(0)
+  const [revealUntil, setRevealUntil] = React.useState<number | null>(null)
+  const [round, setRound] = React.useState<RoundPayload | null>(null)
   const [buzzOwner, setBuzzOwner] = React.useState<Buzz>(null)
   const [answerText, setAnswerText] = React.useState('')
 
@@ -68,6 +74,7 @@ export default function Player() {
     const sRef = ref(db, `rooms/${room}/state`)
     const bRef = ref(db, `rooms/${room}/buzz`)
     const rRef = ref(db, `rooms/${room}/lastResult`)
+    const roundRef = ref(db, `rooms/${room}/round`)
     const pRef = uid ? ref(db, `rooms/${room}/players/${uid}/score`) : null
 
     const unsub1 = onValue(sRef, (snap) => {
@@ -75,6 +82,8 @@ export default function Player() {
       if (v.phase) setPhase(v.phase)
       setStartedAt(v.startedAt ?? null)
       setWrongAtAny(!!v.wrongAtAny)
+      if (typeof v.idx === 'number') setIdx(v.idx)
+      if (typeof v.revealUntil === 'number') setRevealUntil(v.revealUntil); else setRevealUntil(null)
       if (v.phase !== 'buzzed') { setAnswerText(''); setConfirmPending(false) }
     })
     const unsub2 = onValue(bRef, (snap) => { setBuzzOwner(snap.val()) })
@@ -85,13 +94,15 @@ export default function Player() {
         setTimeout(() => setResult(null), 3000)
       }
     })
+    const unsubRound = onValue(roundRef, (snap) => { setRound(snap.val() || null) })
+
 
     let unsub4 = () => {}
     if (pRef) {
       unsub4 = onValue(pRef, (snap) => { setMyScore(snap.val() || 0) })
     }
 
-    return () => { off(sRef); off(bRef); off(rRef); if (pRef) off(pRef); unsub1(); unsub2(); unsub3(); unsub4() }
+    return () => { off(sRef); off(bRef); off(rRef); if (pRef) off(pRef); unsub1(); unsub2(); unsub3(); unsub4(); unsubRound() }
   }, [room, uid])
 
   // Oppdater tick hvert sekund når vi spiller → winScore oppdateres live
@@ -290,7 +301,12 @@ export default function Player() {
               {phase === 'playing' && !buzzOwner && '🎵 Trykk når du kan artisten!'}
               {phase === 'playing' && buzzOwner && `🚨 ${buzzOwner.name} buzzet først`}
               {phase === 'buzzed' && (iAmBuzzer ? '✍️ Skriv inn svaret ditt' : '⏳ Venter på svar...')}
-              {phase === 'reveal' && '💡 Fasit vises...'}
+              {phase === 'reveal' && (
+            <div className="card" style={{padding:16, textAlign:'center'}}>
+              <div style={{opacity:0.8, fontSize: compact ? 12 : 14}}>Riktig svar</div>
+              <div style={{fontWeight:700, fontSize: compact ? 18 : 22}}>{facit || 'Fasit'}</div>
+            </div>
+          )}
               {phase === 'idle' && '⏸️ Venter på neste spørsmål'}
               {phase === 'ended' && '🏁 Spillet er ferdig!'}
             </div>
