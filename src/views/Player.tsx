@@ -102,8 +102,11 @@ export default function Player() {
       unsub4 = onValue(pRef, (snap) => { setMyScore(snap.val() || 0) })
     }
 
-    return () => { off(sRef); off(bRef); off(rRef); if (pRef) off(pRef); unsub1(); unsub2(); unsub3(); unsub4(); unsubRound() }
+    return () => { off(sRef); off(bRef); off(rRef); if (pRef) off(pRef); unsub1(); unsub2(); unsub3(); unsub4(); unsubRound(); unsubRound() }
   }, [room, uid])
+
+  const q = round?.questions?.[idx]
+  const facit = q ? `${q.artistNames?.join(', ')} – ${q.name}` : ''
 
   // Oppdater tick hvert sekund når vi spiller → winScore oppdateres live
   React.useEffect(() => {
@@ -172,15 +175,7 @@ export default function Player() {
   }
 
   // Compact layout: detect small viewport height (avoid scroll)
-  const [vh, setVh] = React.useState<number>(typeof window !== 'undefined' ? window.innerHeight : 900);
-  React.useEffect(() => {
-    const onResize = () => setVh(window.innerHeight);
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
-  const compact = vh < 780;
-
-  return (
+return (
     <div className="player-root card vstack" data-compact={compact ? "true" : "false"}>
       <h2>Spiller</h2>
       <div>Rom: <span className="badge">{room}</span></div>
