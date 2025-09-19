@@ -278,10 +278,17 @@ export default function Game() {
                 <button onClick={() => startQuestion(0)} title={!deviceId ? 'Aktiver først' : ''}>🎬 Start runde (spm #1)</button>
               ) : (
                 <>
-                  <button onClick={() => { const ph = roomState && roomState.phase; if (ph === 'playing' || ph === 'buzzed') { revealFasit(true); } else { nextQuestion(); } }}>
-  {(roomState && (roomState.phase === 'playing' || roomState.phase === 'buzzed')) ? '👀 Vis fasit' : '⏭ Neste spørsmål'}
-</button>
-                  <button onClick={() => revealFasit(true)}>💡 Fasit (3 s)</button>
+                  <button onClick={() => revealFasit(false)}>👀 Vis fasit</button>
+                  <button onClick={() => {
+                    const ph = roomState && roomState.phase;
+                    if (ph === 'playing' || ph === 'buzzed') {
+                      revealFasit(true);
+                    } else {
+                      nextQuestion();
+                    }
+                  }}>
+                    {(roomState && (roomState.phase === 'playing' || roomState.phase === 'buzzed')) ? '⏭ Neste (vis fasit først)' : '⏭ Neste spørsmål'}
+                  </button>
                   <button onClick={resetToFirst} title="Tilbake til første spørsmål">🔄 Start på nytt (til #1)</button>
                 </>
               )}

@@ -110,7 +110,7 @@ export default function Player() {
   const q = round?.questions?.[idx]
   const facit = q ? `${q.artistNames?.join(', ')} – ${q.name}` : ''
   const now = Date.now()
-  const isRevealActive = phase === 'reveal' || (typeof revealUntil === 'number' && now < revealUntil)
+  const isRevealActive = phase === 'reveal' || (revealUntil && now < revealUntil)
 
   // Oppdater tick hvert sekund når vi spiller → winScore oppdateres live
   React.useEffect(() => {
@@ -291,16 +291,37 @@ return (
               {phase === 'playing' && !buzzOwner && '🎵 Trykk når du kan artisten!'}
               {phase === 'playing' && buzzOwner && `🚨 ${buzzOwner.name} buzzet først`}
               {phase === 'buzzed' && (iAmBuzzer ? '✍️ Skriv inn svaret ditt' : '⏳ Venter på svar...')}
-              {(typeof isRevealActive !== 'undefined' ? isRevealActive : phase === 'reveal') && (
-            <div className="card" style={{padding:16, textAlign:'center'}}>
-              <div className="facit-title">Riktig svar</div>
-              <div className="facit-answer">{facit || 'Fasit'}</div>
-            </div>
-          )}
               {phase === 'idle' && '⏸️ Venter på neste spørsmål'}
               {phase === 'ended' && '🏁 Spillet er ferdig!'}
             </div>
           </div>
+
+          {isRevealActive && (
+            <div className="card" style={{
+              padding: 20, 
+              textAlign: 'center',
+              marginTop: 16,
+              background: 'var(--ok-weak)',
+              border: '2px solid var(--ok)',
+              borderRadius: '16px'
+            }}>
+              <div className="facit-title" style={{ 
+                fontSize: '16px', 
+                opacity: 0.8, 
+                marginBottom: '8px',
+                color: 'var(--ok)'
+              }}>
+                💡 Riktig svar
+              </div>
+              <div className="facit-answer" style={{ 
+                fontSize: '20px', 
+                fontWeight: 'bold',
+                color: 'var(--ok)'
+              }}>
+                {facit || 'Fasit'}
+              </div>
+            </div>
+          )}
 
           {iAmBuzzer && phase === 'buzzed' && (
             <div className="vstack" style={{ 
