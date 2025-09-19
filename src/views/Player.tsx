@@ -177,7 +177,7 @@ export default function Player() {
 
       {joined && (
         <div className="score-display">
-          \1, fontSize: compact ? "2.4rem" : "3.5rem"}}>
+          <div className="score-number" style={{ fontSize: compact ? "2.4rem" : "3.5rem" }}>
             {myScore}
           </div>
           <div className="score-label">Dine poeng</div>
