@@ -798,3 +798,17 @@ nav a.active {
 .player-root[data-compact="true"] .text-input{
   max-height: 48px;
 }
+
+
+/* Compact sizing via height media queries (no JS 'compact' variable needed) */
+.player-root .score-number { font-size: 3.5rem; }
+.player-root .facit-title { opacity: 0.8; font-size: 14px; text-align: center; }
+.player-root .facit-answer { font-weight: 700; font-size: 22px; text-align: center; }
+
+@media (max-height: 780px) {
+  .player-root .score-number { font-size: 2.4rem; }
+  .player-root .facit-title { font-size: 12px; }
+  .player-root .facit-answer { font-size: 18px; }
+  .player-root .text-input.join-input { max-height: 48px; padding: 10px 12px; font-size: 16px; }
+}
+

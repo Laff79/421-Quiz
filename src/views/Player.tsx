@@ -176,7 +176,7 @@ export default function Player() {
 
   // Compact layout: detect small viewport height (avoid scroll)
 return (
-    <div className="player-root card vstack" data-compact={compact ? "true" : "false"}>
+    <div className="player-root card vstack" >
       <h2>Spiller</h2>
       <div>Rom: <span className="badge">{room}</span></div>
 
@@ -184,16 +184,7 @@ return (
 
       {joined && (
         <div className="score-display">
-          <div className="score-number" style={{ 
-            background: myScore > 0 
-              ? 'linear-gradient(135deg, var(--ok) 0%, var(--blue) 100%)'
-              : myScore < 0 
-                ? 'linear-gradient(135deg, var(--err) 0%, var(--warning) 100%)'
-                : 'linear-gradient(135deg, var(--muted) 0%, var(--fg) 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text'
-          }}>
+          <div className="score-number">
             {myScore}
           </div>
           <div className="score-label">Dine poeng</div>
@@ -252,7 +243,7 @@ return (
             autoComplete="off"
             value={name}
             onChange={(e)=>setName(e.target.value)}
-            style={{width:'100%',fontSize:compact?'16px':'18px',padding:compact?'10px 12px':'12px 14px',borderRadius:'16px',border:'1px solid var(--border)',background:'rgba(255,255,255,0.06)'}}
+            style={{width:'100%',fontSize:'18px',padding:'12px 14px',borderRadius:'16px',border:'1px solid var(--border)',background:'rgba(255,255,255,0.06)'}}
           />
           <div className="btn-row" style={{ marginTop: 12 }}>
             <button onClick={join} disabled={!name.trim() || !uid}>Join</button>
@@ -298,8 +289,8 @@ return (
               {phase === 'buzzed' && (iAmBuzzer ? '✍️ Skriv inn svaret ditt' : '⏳ Venter på svar...')}
               {phase === 'reveal' && (
             <div className="card" style={{padding:16, textAlign:'center'}}>
-              <div style={{opacity:0.8, fontSize: compact ? 12 : 14}}>Riktig svar</div>
-              <div style={{fontWeight:700, fontSize: compact ? 18 : 22}}>{facit || 'Fasit'}</div>
+              <div className="facit-title">Riktig svar</div>
+              <div className="facit-answer">{facit || 'Fasit'}</div>
             </div>
           )}
               {phase === 'idle' && '⏸️ Venter på neste spørsmål'}
