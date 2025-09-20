@@ -43,7 +43,6 @@ export default function Player() {
 
   const [result, setResult] = React.useState<LastResult | null>(null)
   const [buzzing, setBuzzing] = React.useState(false)
-  const [confirmPending, setConfirmPending] = React.useState(false)
 
   // egen poengsum
   const [myScore, setMyScore] = React.useState<number>(0)
@@ -86,7 +85,7 @@ export default function Player() {
       if (typeof v.revealUntil === 'number') setRevealUntil(v.revealUntil); else setRevealUntil(null)
       if (typeof v.idx === 'number') setIdx(v.idx)
       if (typeof v.revealUntil === 'number') setRevealUntil(v.revealUntil); else setRevealUntil(null)
-      if (v.phase !== 'buzzed') { setAnswerText(''); setConfirmPending(false) }
+      if (v.phase !== 'buzzed') { setAnswerText('') }
     })
     const unsub2 = onValue(bRef, (snap) => { setBuzzOwner(snap.val()) })
     const unsub3 = onValue(rRef, (snap) => {
@@ -164,10 +163,6 @@ export default function Player() {
       setBuzzing(false)
     }
   }
-
-  function requestSubmit(){ if(!answerText.trim()) return; setConfirmPending(true) }
-  function cancelSubmit(){ setConfirmPending(false) }
-  async function confirmSubmit(){ await sendAnswer(); setConfirmPending(false) }
 
   async function sendAnswer() {
     if (!uid) return
@@ -344,7 +339,7 @@ return (
                 value={answerText}
                 onChange={(e)=>setAnswerText(e.target.value)}
                 placeholder="Artist…"
-                onKeyDown={(e)=>{ if(e.key==='Enter' && answerText.trim()) requestSubmit() }}
+                onKeyDown={(e)=>{ if(e.key==='Enter' && answerText.trim()) sendAnswer() }}
                 style={{ 
                   fontSize: '18px',
                   padding: '16px',
@@ -355,35 +350,13 @@ return (
               <div className="btn-row" style={{ marginTop: 16 }}>
                 <button 
                   className="primary"
-                  onClick={requestSubmit} 
+                  onClick={sendAnswer} 
                   disabled={!answerText.trim()}
                   style={{ fontSize: '16px', padding: '16px 24px' }}
                 >
                   📝 Send svar
                 </button>
               </div>
-
-              {confirmPending && (
-                <div className="vstack" style={{ 
-                  marginTop: 20,
-                  padding: '16px',
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  borderRadius: '12px',
-                  gap: '12px'
-                }}>
-                  <div style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '16px' }}>
-                    Er du sikker på svaret: "{answerText}"?
-                  </div>
-                  <div className="btn-row">
-                    <button className="primary" onClick={confirmSubmit} title="Send inn svaret">
-                    ✅ Er du sikker? Send inn
-                  </button>
-                  <button className="ghost" onClick={cancelSubmit} title="Gå tilbake og rediger">
-                    ❌ Avbryt
-                  </button>
-                  </div>
-                </div>
-              )}
             </div>
           )}
         </>
