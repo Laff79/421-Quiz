@@ -175,192 +175,339 @@ export default function Player() {
 
   // Compact layout: detect small viewport height (avoid scroll)
 return (
-    <div className="player-root card vstack" >
-      <h2>Spiller</h2>
-      <div>Rom: <span className="badge">{room}</span></div>
+    <>
+      <div className="game-background"></div>
+      <div className="player-root glass-card vstack" style={{ margin: '16px', padding: '32px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+          <h2 style={{ 
+            margin: 0, 
+            fontSize: '2.5rem',
+            background: 'linear-gradient(135deg, var(--accent) 0%, var(--blue) 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text'
+          }}>
+            🎵 Musikkquiz
+          </h2>
+        </div>
+        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+          <span className="badge" style={{ 
+            fontSize: '16px', 
+            padding: '12px 20px',
+            background: 'rgba(255, 255, 255, 0.1)',
+            backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(255, 255, 255, 0.2)'
+          }}>
+            🏠 {room}
+          </span>
+        </div>
 
-      {connecting && <div><small className="muted">Kobler til…</small></div>}
+        {connecting && (
+          <div style={{ textAlign: 'center', padding: '20px' }}>
+            <div className="spinner" style={{ margin: '0 auto 12px' }}></div>
+            <small className="muted">Kobler til Firebase...</small>
+          </div>
+        )}
 
-      {joined && (
-        <div className="score-display">
-          <div className="score-number">
+        {joined && (
+          <div className="score-display score-enhanced" style={{ 
+            background: 'linear-gradient(135deg, rgba(255, 71, 87, 0.1) 0%, rgba(0, 210, 211, 0.1) 100%)',
+            backdropFilter: 'blur(20px)',
+            border: '2px solid transparent',
+            borderRadius: '24px',
+            position: 'relative',
+            overflow: 'hidden'
+          }}>
+            <div className="score-number" style={{
+              background: 'linear-gradient(135deg, var(--accent) 0%, var(--blue) 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              textShadow: '0 0 30px rgba(255, 71, 87, 0.3)'
+            }}>
             {myScore}
           </div>
-          <div className="score-label">Dine poeng</div>
-          {(phase === 'playing' || phase === 'buzzed') && (
-            <div style={{ 
-              marginTop: 16, 
-              fontSize: 18, 
-              fontWeight: 'bold',
-              color: 'var(--accent)',
-              padding: '12px 20px',
-              background: 'var(--accent-weak)',
-              borderRadius: '16px',
-              border: '1px solid var(--accent)'
+            <div className="score-label" style={{ 
+              fontSize: '1.3rem',
+              fontWeight: '600',
+              color: 'var(--muted)'
             }}>
-              🎯 Poeng nå: <span style={{ fontSize: '22px' }}>{winScore}</span>
-              <div style={{ fontSize: '14px', marginTop: '4px', opacity: 0.8 }}>
+              💎 Dine poeng
+            </div>
+          {(phase === 'playing' || phase === 'buzzed') && (
+              <div className="phase-enhanced playing" style={{ 
+              marginTop: 16, 
+                fontSize: 18, 
+              fontWeight: 'bold',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '12px'
+            }}>
+                <div className="music-bars">
+                  <div className="music-bar"></div>
+                  <div className="music-bar"></div>
+                  <div className="music-bar"></div>
+                  <div className="music-bar"></div>
+                  <div className="music-bar"></div>
+                </div>
+                <div>
+                  🎯 Poeng nå: <span style={{ fontSize: '24px', fontWeight: 'bold' }}>{winScore}</span>
+                </div>
+              </div>
+            )}
+            {(phase === 'playing' || phase === 'buzzed') && (
+              <div style={{ 
+                fontSize: '14px', 
+                marginTop: '12px', 
+                opacity: 0.8,
+                textAlign: 'center',
+                padding: '8px 16px',
+                background: 'rgba(255, 255, 255, 0.05)',
+                borderRadius: '12px'
+              }}>
                 {winScore === 4 && "Perfekt timing! (deretter 2 → 1)"}
                 {winScore === 2 && "Bra timing! (deretter 1)"}
                 {winScore === 1 && "Siste sjanse!"}
               </div>
-            </div>
           )}
-        </div>
-      )}
+          </div>
+        )}
 
-      {result && (
-        <div
-          className={`banner ${result.correct ? 'ok result-correct' : 'err result-wrong'}`}
+        {result && (
+          <div
+            className={`result-enhanced ${result.correct ? 'correct' : 'wrong'}`}
           style={{
             marginTop: 16,
-            padding: 20,
-            borderRadius: 16,
-            textAlign: 'center',
-            fontSize: 22,
-            fontWeight: 'bold',
-            color: 'white',
-            background: result.correct 
-              ? 'linear-gradient(135deg, var(--ok) 0%, var(--blue) 100%)'
-              : 'linear-gradient(135deg, var(--err) 0%, var(--warning) 100%)',
-            boxShadow: result.correct ? 'var(--glow)' : '0 0 20px rgba(255, 165, 2, 0.4)'
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '16px',
+            fontSize: '24px'
           }}
         >
+            <div style={{ fontSize: '32px' }}>
+              {result.correct ? '🎉' : '💥'}
+            </div>
+            <div>
           {result.correct
-            ? `🎉 Perfekt! +${result.points} poeng`
-            : `💥 Feil svar! -${Math.abs(result.points)} poeng`}
-        </div>
-      )}
+                ? `Perfekt! +${result.points} poeng`
+                : `Feil svar! -${Math.abs(result.points)} poeng`}
+            </div>
+          </div>
+        )}
 
-      {!joined ? (
+        {!joined ? (
         <>
-          <label>Spillernavn (unikt i rommet)</label>
-          <input className="text-input" 
+            <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+              <h3 style={{ 
+                margin: '0 0 8px 0',
+                fontSize: '1.8rem',
+                color: 'var(--fg)'
+              }}>
+                Bli med i spillet! 🎮
+              </h3>
+              <p style={{ 
+                margin: 0,
+                color: 'var(--muted)',
+                fontSize: '16px'
+              }}>
+                Skriv inn ditt spillernavn for å starte
+              </p>
+            </div>
+            <input className="input-enhanced" 
             autoFocus
             inputMode="text"
             enterKeyHint="send"
             autoComplete="off"
+              placeholder="Ditt spillernavn..."
             value={name}
             onChange={(e)=>setName(e.target.value)}
-            style={{width:'100%',fontSize:'18px',padding:'12px 14px',borderRadius:'16px',border:'1px solid var(--border)',background:'rgba(255,255,255,0.06)'}}
+              style={{ 
+                width: '100%',
+                textAlign: 'center',
+                fontSize: '20px',
+                fontWeight: '600'
+              }}
           />
           <div className="btn-row" style={{ marginTop: 12 }}>
-            <button onClick={join} disabled={!name.trim() || !uid}>Join</button>
+              <button 
+                className="btn-enhanced primary"
+                onClick={join} 
+                disabled={!name.trim() || !uid}
+                style={{ 
+                  width: '100%',
+                  fontSize: '18px',
+                  padding: '18px 32px',
+                  fontWeight: 'bold'
+                }}
+              >
+                🚀 Bli med i spillet!
+              </button>
           </div>
         </>
-      ) : (
+        ) : (
         <>
-          <div className="hstack" style={{ gap: 8 }}>
-            <button 
-              className="ghost" 
+            <div className="hstack" style={{ gap: 8, justifyContent: 'center', marginBottom: '20px' }}>
+              <button 
+                className="btn-enhanced" 
               onClick={leave}
-              style={{ fontSize: '14px', padding: '12px 16px' }}
+                style={{ fontSize: '14px', padding: '10px 16px' }}
             >
               👋 Forlat spill
             </button>
           </div>
 
-          <div className="vstack" style={{ gap: 16, marginTop: 16 }}>
-            <h3 style={{ textAlign: 'center', margin: 0 }}>Buzzer</h3>
+            <div className="vstack" style={{ gap: 20, marginTop: 16 }}>
+              <div style={{ textAlign: 'center' }}>
+                <h3 style={{ 
+                  margin: 0,
+                  fontSize: '2rem',
+                  background: 'linear-gradient(135deg, var(--accent) 0%, var(--warning) 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text'
+                }}>
+                  ⚡ Buzzer
+                </h3>
+              </div>
             <button
               onClick={buzz}
               disabled={phase !== 'playing' || !!buzzOwner || buzzing}
               aria-label="Buzz / Stopp"
-              className="buzzer-primary"
+                className="buzzer-primary buzzer-enhanced"
               style={{ 
                 position: 'relative',
                 opacity: (phase !== 'playing' || !!buzzOwner) ? 0.5 : 1,
-                cursor: (phase !== 'playing' || !!buzzOwner) ? 'not-allowed' : 'pointer'
+                  cursor: (phase !== 'playing' || !!buzzOwner) ? 'not-allowed' : 'pointer',
+                  fontSize: '2.5rem',
+                  padding: '48px 32px',
+                  fontFamily: 'Concert One, sans-serif'
               }}
             >
-              {buzzing ? '⏳ BUZZER...' : '🚨 STOPP'}
+                {buzzing ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div className="spinner"></div>
+                    BUZZER...
+                  </div>
+                ) : '🚨 STOPP'}
             </button>
-            <div style={{ 
+              <div className="phase-enhanced" style={{ 
               textAlign: 'center', 
               fontSize: '16px',
-              padding: '12px',
-              background: 'rgba(255, 255, 255, 0.05)',
-              borderRadius: '12px',
-              border: '1px solid var(--border)'
+                justifyContent: 'center'
             }}>
+                <div style={{ fontSize: '20px', marginRight: '8px' }}>
+                  {phase === 'playing' && !buzzOwner && '🎵'}
+                  {phase === 'playing' && buzzOwner && '🚨'}
+                  {phase === 'buzzed' && '✍️'}
+                  {phase === 'idle' && '⏸️'}
+                  {phase === 'ended' && '🏁'}
+                </div>
+                <div>
               {phase === 'playing' && !buzzOwner && '🎵 Trykk når du kan artisten!'}
               {phase === 'playing' && buzzOwner && `🚨 ${buzzOwner.name} buzzet først`}
               {phase === 'buzzed' && (iAmBuzzer ? '✍️ Skriv inn svaret ditt' : '⏳ Venter på svar...')}
               {phase === 'idle' && '⏸️ Venter på neste spørsmål'}
               {phase === 'ended' && '🏁 Spillet er ferdig!'}
+                </div>
             </div>
           </div>
 
-          {isRevealActive && (
-            <div className="card" style={{
+            {isRevealActive && (
+              <div className="glass-card" style={{
               padding: 20, 
               textAlign: 'center',
               marginTop: 16,
-              background: 'var(--ok-weak)',
-              border: '2px solid var(--ok)',
-              borderRadius: '16px'
+                background: 'linear-gradient(135deg, rgba(46, 213, 115, 0.15) 0%, rgba(0, 210, 211, 0.15) 100%)',
+                border: '2px solid var(--ok)',
+                boxShadow: '0 0 30px rgba(46, 213, 115, 0.2)'
             }}>
-              <div className="facit-title" style={{ 
+                <div style={{ 
+                  fontSize: '24px',
+                  marginBottom: '12px'
+                }}>
+                  💡
+                </div>
+                <div className="facit-title" style={{ 
                 fontSize: '16px', 
                 opacity: 0.8, 
                 marginBottom: '8px',
-                color: 'var(--ok)'
+                  color: 'var(--ok)',
+                  fontWeight: '600'
               }}>
-                💡 Riktig svar
+                  RIKTIG SVAR
               </div>
               <div className="facit-answer" style={{ 
                 fontSize: '20px', 
                 fontWeight: 'bold',
-                color: 'var(--ok)'
+                  color: 'var(--ok)',
+                  textShadow: '0 0 10px rgba(46, 213, 115, 0.3)'
               }}>
                 {facit || 'Fasit'}
               </div>
             </div>
-          )}
+            )}
 
-          {iAmBuzzer && phase === 'buzzed' && (
-            <div className="vstack" style={{ 
+            {iAmBuzzer && phase === 'buzzed' && (
+              <div className="glass-card vstack" style={{ 
               marginTop: 20, 
               padding: '20px',
-              background: 'var(--accent-weak)',
-              borderRadius: '16px',
-              border: '2px solid var(--accent)'
+                background: 'linear-gradient(135deg, rgba(255, 71, 87, 0.15) 0%, rgba(255, 165, 2, 0.15) 100%)',
+                border: '2px solid var(--accent)',
+                boxShadow: '0 0 30px rgba(255, 71, 87, 0.2)'
             }}>
-              <label style={{ 
+                <div style={{ 
+                  textAlign: 'center',
+                  fontSize: '24px',
+                  marginBottom: '16px'
+                }}>
+                  ✍️
+                </div>
+                <label style={{ 
                 fontSize: '16px', 
                 fontWeight: 'bold',
                 color: 'var(--accent)',
-                textAlign: 'center'
+                  textAlign: 'center',
+                  textTransform: 'uppercase',
+                  letterSpacing: '1px'
               }}>
-                ✍️ Skriv artistnavn
+                  Skriv artistnavn
               </label>
-              <input
+                <input
+                  className="input-enhanced"
                 autoFocus
                 value={answerText}
                 onChange={(e)=>setAnswerText(e.target.value)}
                 placeholder="Artist…"
                 onKeyDown={(e)=>{ if(e.key==='Enter' && answerText.trim()) sendAnswer() }}
                 style={{ 
-                  fontSize: '18px',
-                  padding: '16px',
+                    fontSize: '20px',
                   textAlign: 'center',
-                  fontWeight: 'bold'
+                    fontWeight: 'bold',
+                    marginTop: '12px'
                 }}
               />
               <div className="btn-row" style={{ marginTop: 16 }}>
                 <button 
-                  className="primary"
+                    className="btn-enhanced primary"
                   onClick={sendAnswer} 
                   disabled={!answerText.trim()}
-                  style={{ fontSize: '16px', padding: '16px 24px' }}
+                    style={{ 
+                      fontSize: '18px', 
+                      padding: '18px 32px',
+                      width: '100%',
+                      fontWeight: 'bold'
+                    }}
                 >
                   📝 Send svar
                 </button>
               </div>
             </div>
-          )}
+            )}
         </>
-      )}
-    </div>
+        )}
+      </div>
+    </>
   )
 }

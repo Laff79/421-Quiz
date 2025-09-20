@@ -249,39 +249,108 @@ export default function Game() {
   const activePlayers = Object.entries(players).filter(([_, p]) => (p.lastSeen || 0) >= (round?.createdAt || 0))
 
   return (
-    <div className="card vstack">
-      <h2>Spillvisning</h2>
+    <>
+      <div className="game-background"></div>
+      <div className="glass-card vstack" style={{ margin: '16px', padding: '32px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <h2 style={{ 
+            margin: 0, 
+            fontSize: '3rem',
+            background: 'linear-gradient(135deg, var(--accent) 0%, var(--blue) 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text'
+          }}>
+            🎮 Spillkontroll
+          </h2>
+        </div>
 
       {/* Kontroller */}
-      <div className="vstack" style={{ marginBottom: 8 }}>
-        <div className="hstack" style={{ gap: 8, flexWrap: 'wrap' }}>
-          <button onClick={initWebPlayer}>Aktiver nettleser-spiller</button>
-            <button onClick={transferHere}>🔄 Overfør avspilling hit</button>
-            <button onClick={refreshDevices}>📱 Sjekk enheter</button>
-          <span className="badge">{playerStatus}</span>
+        <div className="glass-card vstack" style={{ marginBottom: 24, padding: '24px' }}>
+          <h3 style={{ margin: '0 0 16px 0', textAlign: 'center' }}>🎵 Lydkontroller</h3>
+          <div className="hstack" style={{ gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
+            <button className="btn-enhanced primary" onClick={initWebPlayer}>
+              🎧 Aktiver nettleser-spiller
+            </button>
+            <button className="btn-enhanced" onClick={transferHere}>
+              🔄 Overfør avspilling hit
+            </button>
+            <button className="btn-enhanced" onClick={refreshDevices}>
+              📱 Sjekk enheter
+            </button>
+          </div>
+          <div style={{ textAlign: 'center', marginTop: '16px' }}>
+            <span className="badge" style={{ 
+              fontSize: '16px', 
+              padding: '12px 20px',
+              background: deviceId ? 'var(--ok-weak)' : 'var(--warning-weak)',
+              borderColor: deviceId ? 'var(--ok)' : 'var(--warning)',
+              color: deviceId ? 'var(--ok)' : 'var(--warning)'
+            }}>
+              {deviceId ? '✅' : '⚠️'} {playerStatus}
+            </span>
         </div>
-        {playError && <small className="badge" style={{ color: '#b00020' }}>{playError}</small>}
+          {playError && (
+            <div className="banner err" style={{ marginTop: '16px', textAlign: 'center' }}>
+              {playError}
+            </div>
+          )}
       </div>
 
       {!round ? (
-        <p>
+        <div className="banner" style={{ textAlign: 'center', padding: '32px' }}>
+          <div style={{ fontSize: '48px', marginBottom: '16px' }}>🎵</div>
+          <h3 style={{ margin: '0 0 16px 0' }}>Ingen runde funnet</h3>
+          <p style={{ margin: '0 0 24px 0', color: 'var(--muted)' }}>
           Ingen runde funnet. Gå til{' '}
-          <a href="/" onClick={(e) => { e.preventDefault(); nav('/host') }}>Vert</a>{' '}og bygg en runde.
-        </p>
+            <a href="/" onClick={(e) => { e.preventDefault(); nav('/host') }}>Vert</a>{' '}
+            og bygg en runde.
+          </p>
+          <button className="btn-enhanced primary" onClick={() => nav('/host')}>
+            🏠 Gå til Vert
+          </button>
+        </div>
       ) : (
         <>
-          <div className="hstack" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className="glass-card" style={{ padding: '24px', marginBottom: '24px' }}>
+            <div className="hstack" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
             <div>
-              <div>🏠 Rom: <span className="badge">{room}</span></div>
-              <div>❓ Spørsmål: <span className="badge">{roomState.idx + 1}/{round.questions.length}</span></div>
+                <div style={{ marginBottom: '8px' }}>
+                  🏠 Rom: <span className="badge" style={{ 
+                    fontSize: '16px', 
+                    padding: '8px 16px',
+                    background: 'var(--accent-weak)',
+                    borderColor: 'var(--accent)',
+                    color: 'var(--accent)'
+                  }}>{room}</span>
+                </div>
+                <div>
+                  ❓ Spørsmål: <span className="badge" style={{ 
+                    fontSize: '16px', 
+                    padding: '8px 16px',
+                    background: 'var(--blue)',
+                    borderColor: 'var(--blue)',
+                    color: 'white'
+                  }}>{roomState.idx + 1}/{round.questions.length}</span>
+                </div>
             </div>
-            <div className="hstack" style={{ gap: 8, flexWrap: 'wrap' }}>
+            </div>
+            <div className="hstack" style={{ gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
               {roomState.phase === 'idle' ? (
-                <button onClick={() => startQuestion(0)} title={!deviceId ? 'Aktiver først' : ''}>🎬 Start runde (spm #1)</button>
+                <button 
+                  className="btn-enhanced primary"
+                  onClick={() => startQuestion(0)} 
+                  title={!deviceId ? 'Aktiver først' : ''}
+                  style={{ fontSize: '18px', padding: '16px 32px' }}
+                >
+                  🎬 Start runde (spm #1)
+                </button>
               ) : (
                 <>
-                  <button onClick={() => revealFasit(false)}>👀 Vis fasit (3s)</button>
-                  <button onClick={() => {
+                  <button className="btn-enhanced" onClick={() => revealFasit(false)}>
+                    👀 Vis fasit (3s)
+                  </button>
+                  <button className="btn-enhanced" onClick={() => {
                     const ph = roomState && roomState.phase;
                     if (ph === 'playing' || ph === 'buzzed') {
                       revealFasit(true);
@@ -291,46 +360,75 @@ export default function Game() {
                   }}>
                     {(roomState && (roomState.phase === 'playing' || roomState.phase === 'buzzed')) ? '⏭ Neste (vis fasit først)' : '⏭ Neste spørsmål'}
                   </button>
-                  <button onClick={resetToFirst} title="Tilbake til første spørsmål">🔄 Start på nytt (til #1)</button>
+                  <button className="btn-enhanced" onClick={resetToFirst} title="Tilbake til første spørsmål">
+                    🔄 Start på nytt (til #1)
+                  </button>
                 </>
               )}
             </div>
           </div>
 
-          <div className="btn-row" style={{ marginTop: 8 }}>
-            <button className="ghost" onClick={() => nav("/")}>🏠 Til Lobby</button>
+          <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+            <button className="btn-enhanced" onClick={() => nav("/")}>
+              🏠 Til Lobby
+            </button>
           </div>
 
-          <hr />
 
           {/* Status */}
-          <div className="hstack sticky-top" style={{ gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-            <div className={`phase-indicator ${roomState.phase}`}>
+          <div className="glass-card sticky-top" style={{ 
+            padding: '20px', 
+            marginBottom: '24px',
+            background: 'rgba(0, 0, 0, 0.3)',
+            backdropFilter: 'blur(25px)'
+          }}>
+            <div className="hstack" style={{ gap: 16, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center' }}>
+              <div className={`phase-enhanced ${roomState.phase}`}>
+                <div style={{ fontSize: '20px' }}>
               {roomState.phase === 'idle' && '⏸️ Venter'}
               {roomState.phase === 'playing' && '🎵 Spiller'}
               {roomState.phase === 'buzzed' && '🚨 Buzzet'}
               {roomState.phase === 'reveal' && '💡 Fasit'}
               {roomState.phase === 'ended' && '🏁 Ferdig'}
+                </div>
+                {roomState.phase === 'playing' && (
+                  <div className="music-bars">
+                    <div className="music-bar"></div>
+                    <div className="music-bar"></div>
+                    <div className="music-bar"></div>
+                    <div className="music-bar"></div>
+                    <div className="music-bar"></div>
+                  </div>
+                )}
             </div>
             {(roomState.phase !== 'idle' && roomState.phase !== 'ended') && (
               <>
-                <span className="badge" style={{ fontSize: '16px', padding: '10px 16px' }}>
+                <span className="badge" style={{ 
+                  fontSize: '18px', 
+                  padding: '12px 20px',
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  backdropFilter: 'blur(10px)'
+                }}>
                   ⏰ {tSec}s
                 </span>
                 <span className="badge" style={{ 
-                  fontSize: '16px', 
-                  padding: '10px 16px',
+                  fontSize: '18px', 
+                  padding: '12px 20px',
                   background: 'var(--accent-weak)',
                   borderColor: 'var(--accent)',
-                  color: 'var(--accent)'
+                  color: 'var(--accent)',
+                  fontWeight: 'bold'
                 }}>
                   🎯 {roomState.phase === 'buzzed' && typeof lockedInfo === 'number' ? lockedInfo : winScore} poeng
                 </span>
                 {typeof lockedInfo === 'number' && buzz && (
-                  <span className="badge pulse" style={{ 
+                  <span className="badge" style={{ 
                     background: 'var(--warning-weak)',
                     borderColor: 'var(--warning)',
-                    color: 'var(--warning)'
+                    color: 'var(--warning)',
+                    fontSize: '16px',
+                    padding: '10px 16px',
+                    animation: 'pulse-glow-phase 1s ease-in-out infinite'
                   }}>
                     🔒 {buzz.name}: {lockedInfo}p
                   </span>
@@ -339,7 +437,9 @@ export default function Game() {
                   <span className="badge" style={{ 
                     background: 'var(--err-weak)',
                     borderColor: 'var(--err)',
-                    color: 'var(--err)'
+                    color: 'var(--err)',
+                    fontSize: '16px',
+                    padding: '10px 16px'
                   }}>
                     ❌ Første feil
                   </span>
@@ -347,113 +447,142 @@ export default function Game() {
               </>
             )}
             {buzz && (
-              <span className="badge pulse" style={{ 
+              <span className="badge" style={{ 
                 background: 'var(--accent-weak)',
                 borderColor: 'var(--accent)',
                 color: 'var(--accent)',
-                fontSize: '16px',
-                padding: '10px 16px',
-                fontWeight: 'bold'
+                fontSize: '18px',
+                padding: '12px 20px',
+                fontWeight: 'bold',
+                animation: 'pulse-glow-phase 1s ease-in-out infinite'
               }}>
                 🚨 {buzz.name}
               </span>
             )}
+            </div>
           </div>
 
           {/* Fasit */}
           {roomState.phase === 'reveal' && q && (
-            <div className="banner ok" style={{ 
+            <div className="result-enhanced correct" style={{ 
               marginTop: 16, 
-              padding: '24px',
-              textAlign: 'center',
-              fontSize: '18px'
+              marginBottom: 24
             }}>
-              <div style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '8px' }}>
+              <div style={{ fontSize: '32px', marginBottom: '16px' }}>
                 💡 FASIT
               </div>
-              <div style={{ fontSize: '20px', color: 'var(--ok)' }}>
+              <div style={{ fontSize: '24px', fontWeight: 'bold' }}>
                 {q.artistNames.join(', ')} — {q.name}
               </div>
             </div>
           )}
 
           {/* Scoreboard */}
-          <div className="vstack" style={{ marginTop: 20 }}>
-            <h3 style={{ margin: '0 0 16px 0', textAlign: 'center' }}>🏆 Scoreboard</h3>
-            <div className="scoreboard" style={{ maxHeight: 280, overflow: 'auto' }}>
+          <div className="glass-card vstack" style={{ padding: '24px' }}>
+            <h3 style={{ 
+              margin: '0 0 24px 0', 
+              textAlign: 'center',
+              fontSize: '2rem',
+              background: 'linear-gradient(135deg, var(--gold) 0%, var(--accent) 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text'
+            }}>
+              🏆 Scoreboard
+            </h3>
+            <div className="scoreboard-enhanced" style={{ maxHeight: 400, overflow: 'auto' }}>
               {activePlayers.length === 0 && (<small className="muted">Ingen spillere enda – be folk åpne /player og joine.</small>)}
               {activePlayers
                 .sort(([,a], [,b]) => (b.score || 0) - (a.score || 0))
                 .map(([pid, p], index) => (
-                <div key={pid} className="scoreboard-row">
+                <div key={pid} className="scoreboard-row-enhanced">
                   <div className="hstack" style={{ gap: '12px' }}>
                     <span style={{ 
-                      fontSize: '18px',
-                      minWidth: '24px',
-                      textAlign: 'center'
+                      fontSize: '24px',
+                      minWidth: '32px',
+                      textAlign: 'center',
+                      fontWeight: 'bold'
                     }}>
                       {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}
                     </span>
-                    <div className="score-name" style={{ fontSize: '16px' }}>{p.name}</div>
+                    <div className="score-name" style={{ 
+                      fontSize: '18px',
+                      fontWeight: index < 3 ? 'bold' : 'normal'
+                    }}>
+                      {p.name}
+                    </div>
                   </div>
-                  <div className="score-points" style={{ fontSize: '18px' }}>{p.score ?? 0}</div>
+                  <div className="score-points" style={{ 
+                    fontSize: '20px',
+                    fontWeight: 'bold'
+                  }}>
+                    {p.score ?? 0}
+                  </div>
                 </div>
               ))}
             </div>
           </div>
 
           {roomState.phase === 'ended' && (
-            <div className="vstack" style={{ marginTop: 16 }}>
+            <div className="glass-card vstack" style={{ marginTop: 24, padding: '32px' }}>
               <div style={{ 
                 textAlign: 'center', 
-                fontSize: '24px', 
+                fontSize: '32px', 
                 fontWeight: 'bold',
-                marginBottom: '16px'
-              }}>🎉 Spillet er ferdig!</div>
+                marginBottom: '24px',
+                background: 'linear-gradient(135deg, var(--accent) 0%, var(--gold) 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text'
+              }}>
+                🎉 Spillet er ferdig!
+              </div>
               
               {/* Spilleliste-oversikt */}
-              <div className="vstack" style={{ marginTop: 20 }}>
-                <h3 style={{ margin: '0 0 16px 0', textAlign: 'center' }}>🎵 Sanger i quizen</h3>
+              <div className="vstack" style={{ marginTop: 32 }}>
+                <h3 style={{ 
+                  margin: '0 0 20px 0', 
+                  textAlign: 'center',
+                  fontSize: '1.8rem'
+                }}>
+                  🎵 Sanger i quizen
+                </h3>
                 <div 
-                  className="vstack"
+                  className="glass-card vstack"
                   style={{
-                    maxHeight: 400,
+                    maxHeight: 500,
                     overflow: 'auto',
-                    border: '1px solid var(--border)',
-                    borderRadius: 16,
                     padding: 16,
-                    background: 'rgba(255, 255, 255, 0.02)',
                     gap: 12
                   }}
                 >
                   {round.questions.map((q, i) => (
-                    <div 
+                    <div
                       key={q.id} 
-                      className="hstack" 
+                      className="glass-card hstack" 
                       style={{ 
                         justifyContent: 'space-between',
                         padding: '12px 16px',
-                        background: 'rgba(255, 255, 255, 0.05)',
-                        borderRadius: 12,
-                        border: '1px solid var(--border)'
+                        transition: 'all 0.2s ease'
                       }}
                     >
                       <div className="vstack" style={{ gap: 4, flex: 1 }}>
                         <div className="hstack" style={{ gap: 12 }}>
-                          <span className="badge" style={{ 
+                          <span className="badge" style={{
                             minWidth: '32px', 
                             textAlign: 'center',
-                            fontSize: '14px'
+                            fontSize: '14px',
+                            fontWeight: 'bold'
                           }}>
                             {i + 1}
                           </span>
                           <div>
-                            <div style={{ fontWeight: 'bold', fontSize: '16px' }}>
+                            <div style={{ fontWeight: 'bold', fontSize: '18px' }}>
                               {q.name}
                             </div>
                             <div style={{ 
                               color: 'var(--muted)', 
-                              fontSize: '14px',
+                              fontSize: '15px',
                               marginTop: '2px'
                             }}>
                               👤 {q.artistNames.join(', ')}
@@ -462,9 +591,10 @@ export default function Game() {
                         </div>
                       </div>
                       <div style={{ 
-                        fontSize: '12px', 
+                        fontSize: '14px', 
                         color: 'var(--muted)',
-                        textAlign: 'right'
+                        textAlign: 'right',
+                        fontWeight: '500'
                       }}>
                         ⏱️ {Math.round((q.duration_ms || 0) / 1000)}s
                       </div>
@@ -473,14 +603,19 @@ export default function Game() {
                 </div>
               </div>
               
-              <div className="hstack" style={{ gap: 8 }}>
-                <button onClick={resetToFirst}>🔄 Start på nytt (til #1)</button>
-                <button onClick={() => nav('/host')}>🏠 Tilbake til Vert</button>
+              <div className="hstack" style={{ gap: 16, marginTop: 32, justifyContent: 'center' }}>
+                <button className="btn-enhanced" onClick={resetToFirst}>
+                  🔄 Start på nytt (til #1)
+                </button>
+                <button className="btn-enhanced primary" onClick={() => nav('/host')}>
+                  🏠 Tilbake til Vert
+                </button>
               </div>
             </div>
           )}
         </>
       )}
-    </div>
+      </div>
+    </>
   )
 }

@@ -324,140 +324,227 @@ export default function Host() {
   }
 
   return (
-    <div className="card vstack">
-      <h2>Vertspanel</h2>
-      <div>Rom: <span className="badge">{room}</span></div>
+    <>
+      <div className="game-background"></div>
+      <div className="glass-card vstack" style={{ margin: '16px', padding: '32px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <h2 style={{ 
+            margin: 0, 
+            fontSize: '3rem',
+            background: 'linear-gradient(135deg, var(--accent) 0%, var(--gold) 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text'
+          }}>
+            🎤 Vertspanel
+          </h2>
+        </div>
+        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <span className="badge" style={{ 
+            fontSize: '18px', 
+            padding: '12px 24px',
+            background: 'var(--accent-weak)',
+            borderColor: 'var(--accent)',
+            color: 'var(--accent)',
+            fontWeight: 'bold'
+          }}>
+            🏠 Rom: {room}
+          </span>
+        </div>
 
       {/* Inviter spillere */}
-      <hr />
-      <div className="vstack">
-        <strong>Inviter spillere</strong>
-        <div className="hstack" style={{ gap: 8, flexWrap: 'wrap' }}>
+        <div className="glass-card vstack" style={{ padding: '24px', marginBottom: '24px' }}>
+          <h3 style={{ margin: '0 0 20px 0', textAlign: 'center' }}>
+            👥 Inviter spillere
+          </h3>
+          <div className="vstack" style={{ gap: 16 }}>
           <input
+              className="input-enhanced"
             readOnly
             value={playerUrl}
             onFocus={(e) => e.currentTarget.select()}
-            style={{ minWidth: 280 }}
+              style={{ 
+                minWidth: 280,
+                textAlign: 'center',
+                fontSize: '16px'
+              }}
           />
-          <button className="primary" onClick={copyLink}>Kopier lenke</button>
-          <button className="ghost" onClick={shareLink}>Del…</button>
-          <button className="ghost" onClick={() => setShowQR(v => !v)}>
+            <div className="hstack" style={{ gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
+              <button className="btn-enhanced primary" onClick={copyLink}>
+                📋 Kopier lenke
+              </button>
+              <button className="btn-enhanced" onClick={shareLink}>
+                📤 Del...
+              </button>
+              <button className="btn-enhanced" onClick={() => setShowQR(v => !v)}>
             {showQR ? 'Skjul QR' : 'Vis QR'}
           </button>
+            </div>
         </div>
-        {copyMsg && <small className="badge">{copyMsg}</small>}
+          {copyMsg && (
+            <div className="banner ok" style={{ textAlign: 'center', marginTop: '12px' }}>
+              {copyMsg}
+            </div>
+          )}
         {showQR && (
-          <div className="vstack" style={{ marginTop: 16, alignItems: 'flex-start' }}>
-            <div className="qr-container">
+            <div className="vstack" style={{ marginTop: 20, alignItems: 'center' }}>
+              <div className="qr-container" style={{ 
+                padding: '24px',
+                background: 'white',
+                borderRadius: '20px',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)'
+              }}>
               <img
-                width={180}
-                height={180}
+                  width={200}
+                  height={200}
                 alt="QR-kode for spiller-lenke"
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(playerUrl)}`}
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(playerUrl)}`}
               />
             </div>
-            <small className="muted">Spillere kan skanne for å bli med.</small>
+              <small className="muted" style={{ marginTop: '12px', textAlign: 'center' }}>
+                📱 Spillere kan skanne for å bli med
+              </small>
           </div>
         )}
       </div>
 
       {/* Verts-spiller */}
-      <hr />
-      <div className="vstack">
-        <strong>Verts-spiller</strong>
-        <div className="hstack" style={{ gap: 8, flexWrap: 'wrap' }}>
+        <div className="glass-card vstack" style={{ padding: '24px', marginBottom: '24px' }}>
+          <h3 style={{ margin: '0 0 20px 0', textAlign: 'center' }}>
+            🎮 Verts-spiller
+          </h3>
+          <div className="vstack" style={{ gap: 16 }}>
           <input
+              className="input-enhanced"
             value={hostName}
             onChange={(e) => setHostName(e.target.value)}
             placeholder="Ditt spillernavn"
-            style={{ minWidth: 200 }}
+              style={{ 
+                minWidth: 200,
+                textAlign: 'center',
+                fontSize: '18px'
+              }}
           />
           <button
-            className="primary"
+              className="btn-enhanced primary"
             onClick={() =>
               window.open(
                 `/player?room=${encodeURIComponent(room)}&name=${encodeURIComponent(hostName)}`,
                 '_blank'
               )
             }
+              style={{ 
+                fontSize: '16px',
+                padding: '16px 24px'
+              }}
           >
-            Bli med som spiller (ny fane)
+              🎯 Bli med som spiller (ny fane)
           </button>
+          </div>
+          <div className="banner" style={{ marginTop: '16px', textAlign: 'center' }}>
+            💡 Tips: åpne denne på mobilen din hvis du vil buzze der
+          </div>
         </div>
-        <small className="badge">Tips: åpne denne på mobilen din hvis du vil buzze der.</small>
       </div>
 
       {/* Lydtest */}
-      <hr />
-      <div className="vstack">
-        <strong>Lydtest</strong>
-        <div className="hstack" style={{ gap: 8, flexWrap: 'wrap' }}>
-          <button className="primary" onClick={initPlayer}>Start nettleser-spiller</button>
-          <button className="ghost" onClick={playTest}>🎵 Spill testsang</button>
-          <button className="ghost" onClick={pauseTest}>⏸ Pause</button>
+        <div className="glass-card vstack" style={{ padding: '24px', marginBottom: '24px' }}>
+          <h3 style={{ margin: '0 0 20px 0', textAlign: 'center' }}>
+            🔊 Lydtest
+          </h3>
+          <div className="hstack" style={{ gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
+            <button className="btn-enhanced primary" onClick={initPlayer}>
+              🎧 Start nettleser-spiller
+            </button>
+            <button className="btn-enhanced" onClick={playTest}>
+              🎵 Spill testsang
+            </button>
+            <button className="btn-enhanced" onClick={pauseTest}>
+              ⏸ Pause
+            </button>
+          </div>
+          <div style={{ textAlign: 'center', marginTop: '16px' }}>
+            <span className="badge" style={{ 
+              fontSize: '16px', 
+              padding: '12px 20px',
+              background: status.includes('✔') || status.includes('Klar') ? 'var(--ok-weak)' : 'var(--warning-weak)',
+              borderColor: status.includes('✔') || status.includes('Klar') ? 'var(--ok)' : 'var(--warning)',
+              color: status.includes('✔') || status.includes('Klar') ? 'var(--ok)' : 'var(--warning)'
+            }}>
+              {status.includes('✔') || status.includes('Klar') ? '✅' : '⚠️'} {status}
+            </span>
         </div>
-        <small className="badge">{status}</small>
       </div>
 
       {/* Spilleliste-velger */}
-      <hr />
-      <div className="vstack">
-        <strong>Spilleliste-velger</strong>
+        <div className="glass-card vstack" style={{ padding: '24px', marginBottom: '24px' }}>
+          <h3 style={{ margin: '0 0 20px 0', textAlign: 'center' }}>
+            🎵 Spilleliste-velger
+          </h3>
 
-        <div className="hstack" style={{ gap: 8, flexWrap: 'wrap' }}>
-          <button className="primary" onClick={loadPlaylistsFirst} disabled={loadingPl} style={{ position: 'relative' }}>
+          <div className="vstack" style={{ gap: 16 }}>
+            <div className="hstack" style={{ gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
+              <button className="btn-enhanced primary" onClick={loadPlaylistsFirst} disabled={loadingPl} style={{ position: 'relative' }}>
             {loadingPl && <span className="spinner"></span>}
-            {loadingPl ? 'Henter spillelister…' : '🎵 Hent spillelister'}
+                {loadingPl ? '⏳ Henter spillelister...' : '🎵 Hent spillelister'}
           </button>
+            </div>
           <input
+              className="input-enhanced"
             placeholder="Søk navn/eier…"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            style={{ minWidth: 200 }}
+              style={{ 
+                minWidth: 200,
+                textAlign: 'center'
+              }}
           />
+            <div style={{ textAlign: 'center' }}>
           <span className="badge" style={{ fontSize: '14px', padding: '8px 12px' }}>
             📊 {filtered.length}/{playlists.length} vist • ✅ {selected.size} valgt
           </span>
+            </div>
         </div>
 
         {plError && (
-          <small className="badge" style={{ color: '#b00020' }}>
+            <div className="banner err" style={{ textAlign: 'center', marginTop: '16px' }}>
             {plError}
-          </small>
+            </div>
         )}
 
         {playlists.length > 0 && (
           <>
             <div
-              className="vstack"
+              className="glass-card vstack"
               style={{
                 maxHeight: 360,
                 overflow: 'auto',
-                border: '1px solid var(--border)',
-                background: 'rgba(255, 255, 255, 0.02)',
-                borderRadius: 12,
                 padding: 8,
+                marginTop: 16
               }}
             >
               {filtered.map((pl) => (
                 <label
                   key={pl.id}
-                  className="hstack"
+                  className="hstack glass-card"
                   style={{ 
                     justifyContent: 'space-between', 
-                    padding: '8px 6px',
-                    cursor: 'pointer'
+                    padding: '12px 16px',
+                    cursor: 'pointer',
+                    margin: '4px 0',
+                    transition: 'all 0.2s ease'
                   }}
                 >
-                  <div className="hstack" style={{ gap: 8 }}>
+                  <div className="hstack" style={{ gap: 12 }}>
                     <input
                       type="checkbox"
                       checked={selected.has(pl.id)}
                       onChange={() => toggleSelect(pl.id)}
+                      style={{ transform: 'scale(1.2)' }}
                     />
                     <div>
-                      <div style={{ fontWeight: 600, fontSize: '15px' }}>{pl.name}</div>
-                      <small style={{ color: 'var(--muted)', fontSize: '13px' }}>
+                      <div style={{ fontWeight: 600, fontSize: '16px' }}>{pl.name}</div>
+                      <small style={{ color: 'var(--muted)', fontSize: '14px' }}>
                         🎵 {pl.tracksTotal} spor • 👤 {pl.owner || 'ukjent eier'}
                       </small>
                     </div>
@@ -466,9 +553,9 @@ export default function Host() {
               ))}
             </div>
 
-            <div className="hstack" style={{ gap: 8, marginTop: 8 }}>
+            <div className="hstack" style={{ gap: 16, marginTop: 20, justifyContent: 'center' }}>
               <button
-                className={nextUrl ? "ghost" : "ghost"}
+                className="btn-enhanced"
                 style={{ 
                   opacity: nextUrl ? 1 : 0.5
                 }}
@@ -476,25 +563,27 @@ export default function Host() {
                 disabled={loadingPl || !nextUrl}
                 title={nextUrl ? '' : 'Ingen flere'}
               >
-                {nextUrl ? 'Vis flere' : 'Ingen flere'}
+                {nextUrl ? '📄 Vis flere' : '🚫 Ingen flere'}
               </button>
 
               <button
-                className="primary"
+                className="btn-enhanced primary"
                 style={{ 
-                  position: 'relative'
+                  position: 'relative',
+                  fontSize: '16px',
+                  padding: '16px 32px'
                 }}
                 onClick={buildRound}
                 disabled={building || selected.size === 0}
                 title={selected.size === 0 ? 'Velg minst én liste' : ''}
               >
                 {building && <span className="spinner"></span>}
-                {building ? '⚙️ Bygger runde…' : `🎯 Bygg runde (${QUESTIONS})`}
+                {building ? '⚙️ Bygger runde...' : `🎯 Bygg runde (${QUESTIONS} spørsmål)`}
               </button>
             </div>
 
             {buildMsg && (
-              <div className="banner" style={{ 
+              <div className={`banner ${built ? 'ok' : ''}`} style={{ 
                 marginTop: 12,
                 fontSize: '14px',
                 textAlign: 'center'
@@ -504,91 +593,108 @@ export default function Host() {
             )}
 
             {built && (
-              <div className="vstack" style={{ marginTop: 16 }}>
+              <div className="glass-card vstack" style={{ marginTop: 24, padding: '24px' }}>
                 <div style={{ 
                   textAlign: 'center', 
-                  fontSize: '20px', 
+                  fontSize: '24px', 
                   fontWeight: 'bold',
-                  marginBottom: '16px',
-                  color: 'var(--ok)'
+                  marginBottom: '20px',
+                  background: 'linear-gradient(135deg, var(--ok) 0%, var(--blue) 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text'
                 }}>
                   🎉 Runde klar – {built.length} spørsmål
                 </div>
 
                 {!showFasit ? (
                   <div
-                    className="vstack"
+                    className="glass-card vstack"
                     style={{
                       maxHeight: 300,
                       overflow: 'auto',
-                      border: '1px dashed var(--border)',
-                      borderRadius: 12,
                       padding: 12,
-                      background: 'rgba(255, 255, 255, 0.02)',
+                      border: '2px dashed var(--border)'
                     }}
                   >
                     {built.map((_, i) => (
-                      <div key={i} className="hstack" style={{ 
+                      <div key={i} className="glass-card hstack" style={{ 
                         justifyContent: 'space-between',
                         padding: '8px 0',
-                        borderBottom: i < built.length - 1 ? '1px solid var(--border)' : 'none'
+                        margin: '4px 0'
                       }}>
                         <div>
-                          <span className="badge" style={{ marginRight: 12, minWidth: '32px', textAlign: 'center' }}>
+                          <span className="badge" style={{ 
+                            marginRight: 12, 
+                            minWidth: '32px', 
+                            textAlign: 'center',
+                            fontWeight: 'bold'
+                          }}>
                             {i + 1}
                           </span>
-                          <span style={{ opacity: 0.7, fontStyle: 'italic' }}>🎵 Skjult spørsmål</span>
+                          <span style={{ opacity: 0.7, fontStyle: 'italic', fontSize: '16px' }}>
+                            🎵 Skjult spørsmål
+                          </span>
                         </div>
-                        <small className="muted">❓</small>
+                        <span style={{ fontSize: '20px' }}>❓</span>
                       </div>
                     ))}
                   </div>
                 ) : (
                   <div
-                    className="vstack"
+                    className="glass-card vstack"
                     style={{
                       maxHeight: 300,
                       overflow: 'auto',
-                      border: '1px dashed var(--ok)',
-                      borderRadius: 12,
                       padding: 12,
-                      background: 'var(--ok-weak)',
+                      border: '2px solid var(--ok)',
+                      background: 'var(--ok-weak)'
                     }}
                   >
                     {built.map((t, i) => (
-                      <div key={t.id} className="hstack" style={{ 
+                      <div key={t.id} className="glass-card hstack" style={{ 
                         justifyContent: 'space-between',
                         padding: '8px 0',
-                        borderBottom: i < built.length - 1 ? '1px solid var(--border)' : 'none'
+                        margin: '4px 0'
                       }}>
                         <div>
-                          <span className="badge" style={{ marginRight: 12, minWidth: '32px', textAlign: 'center' }}>
+                          <span className="badge" style={{ 
+                            marginRight: 12, 
+                            minWidth: '32px', 
+                            textAlign: 'center',
+                            fontWeight: 'bold'
+                          }}>
                             {i + 1}
                           </span>
-                          <strong style={{ fontSize: '15px' }}>{t.name}</strong>
-                          <div style={{ marginLeft: 44, fontSize: '13px', color: 'var(--muted)' }}>
+                          <strong style={{ fontSize: '16px' }}>{t.name}</strong>
+                          <div style={{ marginLeft: 44, fontSize: '14px', color: 'var(--muted)' }}>
                             👤 {t.artistNames.join(', ')}
                           </div>
                         </div>
-                        <small className="muted">⏱️ {Math.round((t.duration_ms || 0) / 1000)}s</small>
+                        <span className="muted" style={{ fontSize: '14px' }}>
+                          ⏱️ {Math.round((t.duration_ms || 0) / 1000)}s
+                        </span>
                       </div>
                     ))}
                   </div>
                 )}
 
-                <div className="hstack" style={{ gap: 12, marginTop: 16 }}>
+                <div className="hstack" style={{ gap: 16, marginTop: 24, justifyContent: 'center' }}>
                   <button 
-                    className="ghost" 
+                    className="btn-enhanced" 
                     onClick={revealFasit3s} 
                     title="Vis fasit kort (3 s)"
-                    style={{ fontSize: '14px' }}
                   >
                     👁 Fasit (3 s)
                   </button>
                   <button 
-                    className="primary" 
+                    className="btn-enhanced primary" 
                     onClick={goToGame}
-                    style={{ fontSize: '16px', padding: '16px 24px' }}
+                    style={{ 
+                      fontSize: '18px', 
+                      padding: '18px 32px',
+                      fontWeight: 'bold'
+                    }}
                   >
                     🚀 Start spillet!
                   </button>
@@ -598,6 +704,7 @@ export default function Host() {
           </>
         )}
       </div>
-    </div>
+      </div>
+    </>
   )
 }
